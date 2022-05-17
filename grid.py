@@ -70,9 +70,9 @@ class VelocityGrid:
         # stretch / transform elements
         self.dx_grid = None
         # self.stretch_grid()
-        self.create_triple_grid(lows=np.array([self.low, -7, 7]),
-                                highs=np.array([-7, 7, self.high]),
-                                elements=np.array([4, 14, 4]))
+        # self.create_triple_grid(lows=np.array([self.low, -7, 7]),
+        #                         highs=np.array([-7, 7, self.high]),
+        #                         elements=np.array([4, 14, 4]))
         if self.dx_grid is None:
             self.dx_grid = self.dx * cp.ones(self.elements)
 
@@ -179,6 +179,53 @@ class PhaseSpace:
         self.charge_sign = charge_sign
         self.om_pc = om_pc  # cyclotron freq. ratio
 
+    def ring_distribution(self, thermal_velocity, alpha, ring_parameter):
+        # Cylindrical coordinates grid set-up, using wave-number x.k1
+        u = outer3(self.u.arr, np.ones_like(self.v.arr), np.ones_like(self.w.arr))
+        v = outer3(np.ones_like(self.u.arr), self.v.arr, np.ones_like(self.w.arr))
+        w = outer3(np.ones_like(self.u.arr), np.ones_like(self.v.arr), self.w.arr)
+        r = np.sqrt(v ** 2.0 + w ** 2.0)
+
+        # Set distribution
+        x = 0.5 * (r / alpha) ** 2.0
+        factor = 1 / (2.0 * np.pi * (alpha ** 2.0) * sp.gamma(ring_parameter + 1.0))
+        ring = factor * np.multiply(x ** ring_parameter, np.exp(-x))
+        maxwell = np.exp(-0.5*u**2/thermal_velocity**2) / np.sqrt(2 * np.pi * thermal_velocity**2)
+
+        return cp.asarray(maxwell * ring)
+
+    def eigenfunction(self, thermal_velocity, alpha, ring_parameter, eigenvalue, wavenumber):
+        # Cylindrical coordinates grid set-up, using wave-number wavenumber
+        u = outer3(self.u.arr, np.ones_like(self.v.arr), np.ones_like(self.w.arr))
+        v = outer3(np.ones_like(self.u.arr), self.v.arr, np.ones_like(self.w.arr))
+        w = outer3(np.ones_like(self.u.arr), np.ones_like(self.v.arr), self.w.arr)
+        r = np.sqrt(v ** 2.0 + w ** 2.0)
+        phi = np.arctan2(w, v)
+        # beta = - self.x.fundamental * r * self.om_pc
+        vt = alpha
+
+        # radial gradient of distribution
+        x = 0.5 * (r / vt) ** 2.0
+        ring = 1 / (2.0 * np.pi * (vt ** 2.0) * sp.gamma(ring_parameter + 1.0)) * np.multiply(x ** ring_parameter,
+                                                                                            np.exp(-x))
+        maxwell = np.exp(-0.5 * u ** 2 / thermal_velocity ** 2) / np.sqrt(2 * np.pi * thermal_velocity ** 2)
+        f = ring * maxwell
+        df_dv_perp = np.multiply(f, (ring_parameter / (x + 1.0e-16) - 1.0)) / (thermal_velocity ** 2.0)
+        df_dv_para = np.multiply(f, u / thermal_velocity ** 2)
+
+        # set up eigenmode
+        zeta_cyclotron = 1 / self.om_pc / wavenumber
+        zeta = eigenvalue
+        denominator_p = zeta - u - zeta_cyclotron
+        denominator_m = zeta - u + zeta_cyclotron
+
+        v_cross_grad = r * df_dv_para - u * df_dv_perp
+        A = df_dv_perp + v_cross_grad / zeta
+
+        eig = 1j * A * 0.5 * (np.exp(1j * phi) / denominator_p + np.exp(-1j * phi) / denominator_m)
+
+        return cp.asarray(np.real(np.tensordot(np.exp(1j * wavenumber * self.x.arr), eig, axes=0)))
+
     def moment0(self, variable):
         return self.u.zero_moment(
             function=self.v.zero_moment(
@@ -242,3 +289,14 @@ class PhaseSpace:
             ),
             idx=[1, 2]
         )
+
+
+def outer3(a, b, c):
+    """
+    Compute outer tensor product of vectors a, b, and c
+    :param a: vector a_i
+    :param b: vector b_j
+    :param c: vector c_k
+    :return: tensor a_i b_j c_k as numpy array
+    """
+    return np.tensordot(a, np.tensordot(b, c, axes=0), axes=0)

@@ -29,12 +29,14 @@ class Static:
 
 class Dynamic:
     """ Class for dynamic fields described by Ampere/Faraday laws, here E_y and B_z """
-    def __init__(self, resolution, vt_c):
+    def __init__(self, resolution, vt_c, om_pc):
         self.electric_y = var.SpaceScalar(resolution=resolution)
         self.electric_z = var.SpaceScalar(resolution=resolution)
+        # self.magnetic_x = None
         self.magnetic_y = var.SpaceScalar(resolution=resolution)
         self.magnetic_z = var.SpaceScalar(resolution=resolution)
         self.vt_c = vt_c
+        self.om_pc = om_pc
 
     def initialize(self, grid, eigenvalue):
         # Set eigenmode
@@ -48,9 +50,12 @@ class Dynamic:
 
     def eigenmode(self, grid, amplitude, wavenumber, eigenvalue):
         # Nodal values (need to think about this some more)
-        # self.magnetic_y.arr_nodal = cp.real()
-        self.magnetic_z.arr_nodal = cp.real(amplitude * cp.exp(1j * wavenumber * grid.x.device_arr))
-        self.electric_y.arr_nodal = cp.real(eigenvalue * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr))
+        # self.magnetic_x = self.om_pc  # cp.real()
+        self.magnetic_y.arr_nodal = cp.real(0 * cp.exp(1j * wavenumber * grid.x.device_arr))
+        self.magnetic_z.arr_nodal = cp.real(amplitude * cp.exp(1j * wavenumber * grid.x.device_arr) / eigenvalue)
+
+        self.electric_y.arr_nodal = -1 * cp.real(amplitude * cp.exp(1j * wavenumber * grid.x.device_arr))
+        self.electric_z.arr_nodal = cp.real(0 * cp.exp(1j * wavenumber * grid.x.device_arr))
 
     def compute_magnetic_y_energy(self, grid):
         self.magnetic_y.inverse_fourier_transform(), self.magnetic_z.inverse_fourier_transform()

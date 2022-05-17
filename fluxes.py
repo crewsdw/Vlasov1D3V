@@ -9,11 +9,12 @@ def basis_product(flux, basis_arr, axis, permutation):
 
 
 class PhaseSpaceFlux:
-    def __init__(self, resolutions, x_modes, order, charge_sign, nu):
+    def __init__(self, resolutions, x_modes, order, charge_sign, om_pc, nu):
         resolutions[0] = x_modes
         self.resolutions = resolutions
         self.order = order
         self.charge_sign = charge_sign
+        self.om_pc = om_pc
         # hyperviscosity
         self.nu = nu
 
@@ -39,10 +40,14 @@ class PhaseSpaceFlux:
 
                                  (slice(self.resolutions[0]),
                                   slice(self.resolutions[1]), slice(self.order),
-                                  slice(self.resolutions[2]), slice(self.order),
-                                  slice(self.resolutions[3]), 0)],
+                                  slice(self.resolutions[2]), -1,
+                                  slice(self.resolutions[3]), slice(self.order))],
 
                                 [(slice(self.resolutions[0]),
+                                  slice(self.resolutions[1]), slice(self.order),
+                                  slice(self.resolutions[2]), slice(self.order),
+                                  slice(self.resolutions[3]), 0),
+                                 (slice(self.resolutions[0]),
                                   slice(self.resolutions[1]), slice(self.order),
                                   slice(self.resolutions[2]), slice(self.order),
                                   slice(self.resolutions[3]), -1)]]
@@ -69,13 +74,13 @@ class PhaseSpaceFlux:
 
                                     [(slice(self.resolutions[0]),
                                       slice(self.resolutions[1]), slice(self.order),
-                                      slice(self.resolutions[2] + 2), slice(self.order),
-                                      slice(self.resolutions[3]), 0),
+                                      slice(self.resolutions[2]), slice(self.order),
+                                      slice(self.resolutions[3] + 2), 0),
 
                                      (slice(self.resolutions[0]),
                                       slice(self.resolutions[1]), slice(self.order),
-                                      slice(self.resolutions[2] + 2), slice(self.order),
-                                      slice(self.resolutions[3]), -1)]]
+                                      slice(self.resolutions[2]), slice(self.order),
+                                      slice(self.resolutions[3] + 2), -1)]]
 
         self.flux_input_slices = [(slice(self.resolutions[0]),
                                    slice(1, self.resolutions[1] + 1), slice(self.order),
@@ -138,13 +143,13 @@ class PhaseSpaceFlux:
         self.directions = [1, 3, 5]
 
         # arrays
-        self.flux_ex = var.Distribution(resolutions=resolutions, order=order)
-        self.flux_ey = var.Distribution(resolutions=resolutions, order=order)
-        self.flux_ez = var.Distribution(resolutions=resolutions, order=order)
-        self.flux_by = var.Distribution(resolutions=resolutions, order=order)
-        self.flux_bz = var.Distribution(resolutions=resolutions, order=order)
+        # self.flux_ex = var.Distribution(resolutions=resolutions, order=order)
+        # self.flux_ey = var.Distribution(resolutions=resolutions, order=order)
+        # self.flux_ez = var.Distribution(resolutions=resolutions, order=order)
+        # self.flux_by = var.Distribution(resolutions=resolutions, order=order)
+        # self.flux_bz = var.Distribution(resolutions=resolutions, order=order)
         # total output
-        self.output = var.Distribution(resolutions=resolutions, order=order)
+        # self.output = var.Distribution(resolutions=resolutions, order=order)
         # Initialize zero-pads
         self.pad_field = None
         self.pad_spectrum = None
@@ -153,7 +158,8 @@ class PhaseSpaceFlux:
         self.pad_field = cp.zeros(grid.x.modes + grid.x.pad_width) + 0j
         self.pad_spectrum = cp.zeros((grid.x.modes + grid.x.pad_width,
                                       grid.u.elements, grid.u.order,
-                                      grid.v.elements, grid.v.order)) + 0j
+                                      grid.v.elements, grid.v.order,
+                                      grid.w.elements, grid.w.order)) + 0j
 
     def compute_spectral_flux(self, distribution, field, grid):
         """ Compute the flux convolution(field, distribution) using pseudospectral method """
@@ -163,61 +169,86 @@ class PhaseSpaceFlux:
         # Pseudospectral product
         field_nodal = cp.fft.irfft(self.pad_field, norm='forward', axis=0)
         distr_nodal = cp.fft.irfft(self.pad_spectrum, norm='forward', axis=0)
-        nodal_flux = cp.multiply(field_nodal[:, None, None, None, None], distr_nodal)
+        nodal_flux = cp.multiply(field_nodal[:, None, None, None, None, None, None], distr_nodal)
         return cp.fft.rfft(nodal_flux, axis=0, norm='forward')[:-grid.x.pad_width, :, :, :, :, :, :]
 
     def semi_discrete_rhs_semi_implicit(self, distribution, static_field, dynamic_field, grid):
         """ Computes the semi-discrete equation for the transport equation """
-        # Compute the three fluxes with zero-padded FFTs
-        self.flux_ex.arr_spectral = self.compute_spectral_flux(distribution=distribution,
-                                                               field=static_field.electric_x, grid=grid)
-        self.flux_ey.arr_spectral = self.compute_spectral_flux(distribution=distribution,
-                                                               field=dynamic_field.electric_y, grid=grid)
-        self.flux_ez.arr_spectral = self.compute_spectral_flux(distribution=distribution,
-                                                               field=dynamic_field.electric_z, grid=grid)
-        self.flux_by.arr_spectral = self.compute_spectral_flux(distribution=distribution,
-                                                               field=dynamic_field.magnetic_y, grid=grid)
-        self.flux_bz.arr_spectral = self.compute_spectral_flux(distribution=distribution,
-                                                               field=dynamic_field.magnetic_z, grid=grid)
         # Compute the distribution RHS
-        return (grid.u.J[None, :, None, None, None, None, None] * self.u_flux(distribution=distribution, grid=grid) +
-                grid.v.J[None, None, None, :, None, None, None] * self.v_flux(distribution=distribution, grid=grid) +
-                grid.v.J[None, None, None, None, None, :, None] * self.w_flux(distribution=distribution, grid=grid) -
+        return (grid.u.J[None, :, None, None, None, None, None] * self.u_flux(distribution=distribution, grid=grid,
+                                                                              static_field=static_field,
+                                                                              dynamic_field=dynamic_field) +
+                grid.v.J[None, None, None, :, None, None, None] * self.v_flux(distribution=distribution, grid=grid,
+                                                                              static_field=static_field,
+                                                                              dynamic_field=dynamic_field) +
+                grid.v.J[None, None, None, None, None, :, None] * self.w_flux(distribution=distribution, grid=grid,
+                                                                              static_field=static_field,
+                                                                              dynamic_field=dynamic_field) -
                 (self.nu * grid.x.device_wavenumbers_fourth[:, None, None, None, None, None, None] *
                  distribution.arr_spectral))
 
-    def u_flux(self, distribution, grid):
+    def semi_discrete_rhs_fully_explicit(self, distribution, static_field, dynamic_field, grid):
+        """ Computes the semi-discrete equation for the transport equation """
+        # Compute the three fluxes with zero-padded FFTs
+        # Compute the distribution RHS
+        return (grid.u.J[None, :, None, None, None, None, None] * self.u_flux(distribution=distribution, grid=grid,
+                                                                              static_field=static_field,
+                                                                              dynamic_field=dynamic_field) +
+                grid.v.J[None, None, None, :, None, None, None] * self.v_flux(distribution=distribution, grid=grid,
+                                                                              static_field=static_field,
+                                                                              dynamic_field=dynamic_field) +
+                grid.v.J[None, None, None, None, None, :, None] * self.w_flux(distribution=distribution, grid=grid,
+                                                                              static_field=static_field,
+                                                                              dynamic_field=dynamic_field) +
+                self.spectral_advection(distribution=distribution, grid=grid) -
+                self.nu * grid.x.device_wavenumbers_fourth[:, None, None, None, None, None, None] *
+                distribution.arr_spectral)
+
+    def u_flux(self, distribution, grid, static_field, dynamic_field):
         """ Compute the DG-projection of the u-directed flux divergence """
         # Pre-condition internal flux by the integration of the velocity coordinate
         # flux = self.charge_sign * (self.flux_ex.arr_spectral + cp.einsum('rps,mijrs->mijrp',
         #                                                                      grid.v.translation_matrix,
         #                                                                      self.flux_bz.arr_spectral))
-        flux = self.charge_sign * (self.flux_ex.arr_spectral +
-                                   (grid.v.device_arr[None, None, None, :, :, None, None] * self.flux_bz.arr_spectral -
-                                    grid.w.device_arr[None, None, None, None, None, :, :] * self.flux_by.arr_spectral))
-        return (basis_product(flux=flux, basis_arr=grid.u.local_basis.internal,
+        flux = self.compute_spectral_flux(distribution=distribution,
+                                          field=static_field.electric_x, grid=grid)
+        flux += (grid.v.device_arr[None, None, None, :, :, None, None] *
+                 self.compute_spectral_flux(distribution=distribution,
+                                            field=dynamic_field.magnetic_z, grid=grid))
+        flux += -1.0 * (grid.w.device_arr[None, None, None, None, None, :, :] *
+                        self.compute_spectral_flux(distribution=distribution,
+                                                   field=dynamic_field.magnetic_y, grid=grid))
+        return (basis_product(flux=self.charge_sign * flux, basis_arr=grid.u.local_basis.internal,
                               axis=2, permutation=self.permutations[0]) -
                 self.numerical_flux(distribution=distribution, flux=flux, grid=grid, dim=0))
 
-    def v_flux(self, distribution, grid):
+    def v_flux(self, distribution, grid, static_field, dynamic_field):
         # flux = self.charge_sign * (self.flux_ey.arr_spectral - cp.einsum('ijk,mikrs->mijrs',
         #                                                                  grid.u.translation_matrix,
         #                                                                  self.flux_bz.arr_spectral))
-        flux = self.charge_sign * (self.flux_ey.arr_spectral -
-                                   grid.u.device_arr[None, :, :, None, None, None, None] * self.flux_bz.arr_spectral)
-        return (basis_product(flux=flux, basis_arr=grid.v.local_basis.internal,
+        flux = self.compute_spectral_flux(distribution=distribution,
+                                          field=dynamic_field.electric_y, grid=grid)
+        flux += -1.0 * (grid.u.device_arr[None, :, :, None, None, None, None] *
+                        self.compute_spectral_flux(distribution=distribution,
+                                                   field=dynamic_field.magnetic_z, grid=grid))
+        flux += (grid.w.device_arr[None, None, None, None, None, :, :] * distribution.arr_spectral / self.om_pc)
+        return (basis_product(flux=self.charge_sign * flux, basis_arr=grid.v.local_basis.internal,
                               axis=4, permutation=self.permutations[1]) -
                 self.numerical_flux(distribution=distribution, flux=flux, grid=grid, dim=1))
 
-    def w_flux(self, distribution, grid):
+    def w_flux(self, distribution, grid, static_field, dynamic_field):
         # flux = self.charge_sign * (self.flux_ey.arr_spectral - cp.einsum('ijk,mikrs->mijrs',
         #                                                                  grid.u.translation_matrix,
         #                                                                  self.flux_bz.arr_spectral))
-        flux = self.charge_sign * (self.flux_ez.arr_spectral +
-                                   grid.u.device_arr[None, :, :, None, None, None, None] * self.flux_by.arr_spectral)
+        flux = self.compute_spectral_flux(distribution=distribution,
+                                          field=dynamic_field.electric_z, grid=grid)
+        flux += (grid.u.device_arr[None, :, :, None, None, None, None] *
+                 self.compute_spectral_flux(distribution=distribution,
+                                            field=dynamic_field.magnetic_y, grid=grid))
+        flux += -1.0 * (grid.v.device_arr[None, None, None, :, :, None, None] * distribution.arr_spectral / self.om_pc)
         return (basis_product(flux=flux, basis_arr=grid.w.local_basis.internal,
                               axis=6, permutation=self.permutations[2]) -
-                self.numerical_flux(distribution=distribution, flux=flux, grid=grid, dim=1))
+                self.numerical_flux(distribution=distribution, flux=flux, grid=grid, dim=2))
 
     def numerical_flux(self, distribution, flux, grid, dim):
         # Allocate
@@ -256,6 +287,10 @@ class PhaseSpaceFlux:
         return basis_product(flux=num_flux, basis_arr=grid.u.local_basis.numerical,
                              axis=self.sub_elements[dim], permutation=self.permutations[dim])
 
+    def spectral_advection(self, distribution, grid):
+        return -1j * cp.multiply(grid.x.device_wavenumbers[:, None, None, None, None, None, None],
+                                 cp.einsum('ijk,mikrspq->mijrspq', grid.u.translation_matrix, distribution.arr_spectral))
+
 
 class SpaceFlux:
     def __init__(self, resolution, c):
@@ -267,9 +302,9 @@ class SpaceFlux:
                          -1j * grid.x.device_wavenumbers * dynamic_field.electric_y.arr_spectral])
 
     def ampere(self, distribution, dynamic_field, grid):
-        distribution.compute_moment_v1(grid=grid)
+        distribution.compute_moment_1(grid=grid)
         return ((self.c ** 2.0) *
                 cp.array([(-1j * grid.x.device_wavenumbers * dynamic_field.magnetic_z.arr_spectral -
                            grid.charge_sign * distribution.moment_v.arr_spectral),
                           (1j * grid.x.device_wavenumbers * dynamic_field.magnetic_y.arr_spectral -
-                          grid.charge_sign * distribution.moment_w.arr_spectral)]))
+                           grid.charge_sign * distribution.moment_w.arr_spectral)]))

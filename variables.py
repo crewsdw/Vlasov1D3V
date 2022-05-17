@@ -40,10 +40,10 @@ class Distribution:
         self.arr_nodal = cp.fft.irfft(self.arr_spectral, axis=0, norm='forward')
 
     def compute_zero_moment(self, grid):
-        self.moment0.arr_spectral = grid.zero_moment(variable=self.arr_spectral)
+        self.moment0.arr_spectral = grid.moment0(variable=self.arr_spectral)
         self.moment0.inverse_fourier_transform()
 
-    def compute_moment_v(self, grid):
+    def compute_moment_1(self, grid):
         self.moment_v.arr_spectral = grid.moment_v(variable=self.arr_spectral)
         self.moment_w.arr_spectral = grid.moment_w(variable=self.arr_spectral)
         self.moment_v.inverse_fourier_transform(), self.moment_w.inverse_fourier_transform()
@@ -69,6 +69,20 @@ class Distribution:
         return self.arr_spectral.reshape(self.arr_spectral.shape[0],
                                          self.resolutions[1] * self.order, self.resolutions[2] * self.order,
                                          self.resolutions[3] * self.order)
+
+    def initialize(self, grid, vt, alpha, ring_gamma, wavenumber, eigenvalue):
+        ix, iu, iv = cp.ones_like(grid.x.device_arr), cp.ones_like(grid.u.device_arr), cp.ones_like(grid.v.device_arr)
+
+        ring_distribution = cp.tensordot(ix, grid.ring_distribution(thermal_velocity=vt,
+                                                                    alpha=alpha,
+                                                                    ring_parameter=ring_gamma),
+                                         axes=0)
+
+        perturbation = grid.eigenfunction(thermal_velocity=vt, alpha=alpha, ring_parameter=ring_gamma,
+                                          eigenvalue=eigenvalue, wavenumber=wavenumber)
+
+        self.arr_nodal = cp.asarray(ring_distribution + 1.0e-3 * perturbation)
+        self.fourier_transform()
 
 
 def trapz(y, dx):
