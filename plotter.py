@@ -14,6 +14,19 @@ class Plotter:
         self.k = grid.x.wavenumbers / grid.x.fundamental
         self.length = grid.x.length
 
+    def velocity_contour_plot(self, scalar, order, index):
+        self.resolutions = scalar.shape
+        self.order = order
+        flattened_dist = scalar.reshape(self.resolutions[0],
+                                        self.resolutions[1] * self.resolutions[2], self.resolutions[3] * self.resolutions[4],
+                                        self.resolutions[5] * self.resolutions[6])
+        plt.figure()
+        cb = np.linspace(np.amin(flattened_dist[0, :, index, :]), np.amax(flattened_dist[0, :, index, :]), num=100)
+        plt.contourf(self.U, self.V, flattened_dist[0, :, index, :], cb)
+        plt.xlabel('u'), plt.ylabel('v'), plt.tight_layout()
+        plt.colorbar()
+        # plt.show()
+
     def spatial_scalar_plot(self, scalar, y_axis, spectrum=True):
         if scalar.arr_nodal is None:
             scalar.inverse_fourier_transform()

@@ -37,7 +37,7 @@ class Stepper:
         self.density_array = np.array([])
 
         # semi-implicit advection matrix
-        self.inv_backward_advection = None
+        self.implicit_x_advection_matrix = None
         self.build_advection_matrix(grid=grid)
 
         # save-times
@@ -47,8 +47,13 @@ class Stepper:
         """ Construct the global backward advection matrix """
         backward_advection_operator = (cp.eye(grid.v.order)[None, None, :, :] -
                                        0.5 * self.dt * -1j * grid.x.device_wavenumbers[:, None, None, None] *
-                                       grid.v.translation_matrix[None, :, :, :])
-        self.inv_backward_advection = cp.linalg.inv(backward_advection_operator)
+                                       grid.u.translation_matrix[None, :, :, :])
+        # forward_advection_operator = (cp.eye(grid.u.order)[None, None, :, :] +
+        #                               0.5 * self.dt * -1j * grid.x.device_wavenumbers[:, None, None, None] *
+        #                               grid.u.translation_matrix[None, :, :, :])
+        # inv_backward_advection = cp.linalg.inv(backward_advection_operator)
+        # self.implicit_x_advection_matrix = cp.matmul(inv_backward_advection, forward_advection_operator)
+        self.implicit_x_advection_matrix = cp.linalg.inv(backward_advection_operator)
 
     def main_loop(self, distribution, static_field, dynamic_field, grid, data_file):
         print('Beginning main loop')
@@ -155,6 +160,7 @@ class Stepper:
                                                         self.dt * electric_y_rhs)
         dynamic_field_stage0.electric_z.arr_spectral = (dynamic_field.electric_z.arr_spectral +
                                                         self.dt * electric_z_rhs)
+        dynamic_field_stage0.magnetic_x.arr_spectral = dynamic_field.magnetic_x.arr_spectral
         dynamic_field_stage0.magnetic_y.arr_spectral = (dynamic_field.magnetic_y.arr_spectral +
                                                         self.dt * magnetic_y_rhs)
         dynamic_field_stage0.magnetic_z.arr_spectral = (dynamic_field.magnetic_z.arr_spectral +
@@ -191,6 +197,7 @@ class Stepper:
                 self.rk_coefficients[0, 1] * dynamic_field_stage0.electric_z.arr_spectral +
                 self.rk_coefficients[0, 2] * self.dt * electric_z_rhs
         )
+        dynamic_field_stage1.magnetic_x.arr_spectral = dynamic_field.magnetic_x.arr_spectral
         dynamic_field_stage1.magnetic_y.arr_spectral = (
                 self.rk_coefficients[0, 0] * dynamic_field.magnetic_y.arr_spectral +
                 self.rk_coefficients[0, 1] * dynamic_field_stage0.magnetic_y.arr_spectral +
@@ -263,8 +270,10 @@ class Stepper:
                  4 / 3 * previous_phase_space_fluxes[0] +
                  5 / 12 * previous_phase_space_fluxes[1]) +
                 0.5 * self.phase_space_flux.spectral_advection(distribution=distribution, grid=grid))
-        distribution.arr_spectral = cp.einsum('nmjk,nmkrspq->nmjrspq',
-                                              self.inv_backward_advection, distribution.arr_spectral)
+        # distribution.arr_spectral = cp.einsum('nmjk,nmkrspq->nmjrspq',
+        #                                       self.implicit_x_advection_matrix, distribution.arr_spectral)
+        # distribution.arr_spectral = cp.einsum('nmjk,nmkrspq->nmjrspq',
+        #                                       self.implicit_x_advection_matrix, distribution.arr_spectral)
         # dynamic field advance
         dynamic_field.electric_y.arr_spectral += self.dt * (
             (23 / 12 * electric_y_rhs -

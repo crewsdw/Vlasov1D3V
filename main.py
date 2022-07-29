@@ -13,17 +13,17 @@ from copy import deepcopy
 # Normalization parameters
 om_pc, vt_c = 10.0, 0.1
 charge_sign = -1.0  # electron
-eigenvalue = 0.4096275588561705+0.4652331645969896j
+eigenvalue = 0.4096275588561705 + 0.4652331645969896j
 
 # elements and order
-elements, order = [16, 16, 16, 16], 10
+elements, order = [8, 20, 20, 20], 10
 
 # Geometry
 grid_fundamental = 0.1  # / om_pc
 length = 2.0 * np.pi / grid_fundamental
-lows = np.array([-0.5 * length, -8.5, -8.5, -8.5])
-highs = np.array([0.5 * length, 8.5, 8.5, 8.5])
-grid = g.PhaseSpace(lows=lows, highs=highs, elements=elements, order=order, charge_sign=-1.0, om_pc=om_pc)
+lows = np.array([-0.5 * length, -10, -10, -10])
+highs = np.array([0.5 * length, 10, 10, 10])
+grid = g.PhaseSpace(lows=lows, highs=highs, elements=elements, order=order, charge_sign=charge_sign, om_pc=om_pc)
 
 # build distribution
 distribution = var.Distribution(resolutions=elements, order=order)
@@ -38,6 +38,7 @@ static_fields = fields.Static(resolution=elements[0])
 static_fields.gauss(distribution=distribution, grid=grid)
 dynamic_fields = fields.Dynamic(resolution=elements[0], vt_c=vt_c, om_pc=om_pc)
 dynamic_fields.initialize(grid=grid, eigenvalue=eigenvalue)
+print(dynamic_fields.magnetic_x.arr_spectral)
 
 plotter = my_plt.Plotter(grid=grid)
 # plotter.spatial_scalar_plot(scalar=distribution.moment0, y_axis='Zero moment', spectrum=False)
@@ -49,17 +50,18 @@ plotter = my_plt.Plotter(grid=grid)
 # plotter3.distribution_contours3d(distribution=distribution, spectral_idx=0, ctype='real')
 
 # Set up fluxes
-phase_space_flux = fx.PhaseSpaceFlux(resolutions=elements, x_modes=grid.x.modes, order=order, charge_sign=charge_sign,
-                         om_pc=om_pc, nu=0)
+phase_space_flux = fx.PhaseSpaceFlux(resolutions=elements, x_modes=grid.x.modes,  # pad_width=grid.x.pad_width,
+                                     order=order, charge_sign=charge_sign,
+                         om_pc=om_pc, nu=0, plotter=plotter)
 phase_space_flux.initialize_zero_pad(grid=grid)
 space_flux = fx.SpaceFlux(resolution=elements[0], c=1/vt_c)
 
 # Set up time-stepper
 print('Lorentz force dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*highs[1]/om_pc)))
 print('Spatial flux dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*highs[1]*grid.x.wavenumbers[-1])))
-dt = 1e-4  # 1.025e-02 * 1.0
-step = 1e-4  # 1.025e-02 * 1.0
-final_time = 1.0e-3
+dt = 1e-5  # 1.025e-02 * 1.0
+step = 1e-5  # 1.025e-02 * 1.0
+final_time = 1.0e-2
 steps = int(np.abs(final_time // dt))
 
 datafile = data.Data(folder='data\\', filename='test_may16')
