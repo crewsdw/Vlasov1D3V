@@ -61,11 +61,20 @@ class Dynamic:
     def eigenmode(self, grid, amplitude, wavenumber, eigenvalue):
         # Nodal values (need to think about this some more)
         # self.magnetic_x = self.om_pc  # cp.real()
-        self.magnetic_y.arr_nodal = cp.real(1j * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr) / eigenvalue)
-        self.magnetic_z.arr_nodal = cp.real(amplitude * cp.exp(1j * wavenumber * grid.x.device_arr) / eigenvalue)
+        sq2 = cp.sqrt(2)
+        eig_y = 1j / sq2 * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr)
+        eig_z = 1.0 / sq2 * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr)
+        self.electric_y.arr_nodal = cp.real(eig_y)
+        self.electric_z.arr_nodal = cp.real(eig_z)
 
-        self.electric_y.arr_nodal = cp.real(1j * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr))
-        self.electric_z.arr_nodal = cp.real(amplitude * cp.exp(1j * wavenumber * grid.x.device_arr))
+        self.magnetic_y.arr_nodal = cp.real(-eig_z / eigenvalue)
+        self.magnetic_z.arr_nodal = cp.real(eig_y / eigenvalue)
+
+        # wtf was I thinking?
+        # self.magnetic_y.arr_nodal = cp.real(-1j * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr) / eigenvalue) / sq2
+        # self.magnetic_z.arr_nodal = cp.real(amplitude * cp.exp(1j * wavenumber * grid.x.device_arr) / eigenvalue) / sq2
+
+
 
     def compute_magnetic_y_energy(self, grid):
         self.magnetic_y.inverse_fourier_transform(), self.magnetic_z.inverse_fourier_transform()

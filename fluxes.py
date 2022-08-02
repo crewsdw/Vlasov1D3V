@@ -597,8 +597,8 @@ class SpaceFlux:
     def ampere(self, distribution, dynamic_field, grid):
         distribution.compute_moment_1(grid=grid)
         return (
-                cp.array([((self.c ** 2.0) * (-1j * grid.x.device_wavenumbers * dynamic_field.magnetic_z.arr_spectral) +
+                cp.array([((self.c ** 2.0) * (-1j * grid.x.device_wavenumbers * dynamic_field.magnetic_z.arr_spectral) -
                            grid.charge_sign * distribution.moment_v.arr_spectral),
-                          ((self.c ** 2.0) * (1j * grid.x.device_wavenumbers * dynamic_field.magnetic_y.arr_spectral) +
+                          ((self.c ** 2.0) * (1j * grid.x.device_wavenumbers * dynamic_field.magnetic_y.arr_spectral) -
                            grid.charge_sign * distribution.moment_w.arr_spectral)])
         )
