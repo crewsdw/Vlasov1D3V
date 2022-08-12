@@ -129,10 +129,12 @@ class PhaseSpaceFlux:
                                 self.resolutions[1], 2,
                                 self.resolutions[2], self.order,
                                 self.resolutions[3], self.order),
+
                                (self.resolutions[0],
                                 self.resolutions[1], self.order,
                                 self.resolutions[2], 2,
                                 self.resolutions[3], self.order),
+
                                (self.resolutions[0],
                                 self.resolutions[1], self.order,
                                 self.resolutions[2], self.order,
@@ -142,10 +144,12 @@ class PhaseSpaceFlux:
                                    self.resolutions[1] + 2, self.order,
                                    self.resolutions[2], self.order,
                                    self.resolutions[3], self.order),
+
                                   (self.resolutions[0],
                                    self.resolutions[1], self.order,
                                    self.resolutions[2] + 2, self.order,
                                    self.resolutions[3], self.order),
+                                  
                                   (self.resolutions[0],
                                    self.resolutions[1], self.order,
                                    self.resolutions[2], self.order,
@@ -207,9 +211,9 @@ class PhaseSpaceFlux:
         # Compute nodal fluxes (component-wise Lorentz force)
         field = self.charge_sign * (electric_field_nodal[:, None, None, None, None] + (
                 (grid.v.device_arr[None, :, :, None, None] *
-                 b_y[:, None, None, None, None]) -
+                 b_z[:, None, None, None, None]) -
                 (grid.w.device_arr[None, None, None, :, :] *
-                 b_z[:, None, None, None, None])
+                 b_y[:, None, None, None, None])
         ))
         nodal_flux = cp.multiply(field[:, None, None, :, :, :, :],
                                  distribution_nodal)

@@ -194,7 +194,7 @@ class PhaseSpace:
 
         return cp.asarray(maxwell * ring)
 
-    def eigenfunction(self, thermal_velocity, alpha, ring_parameter, eigenvalue, wavenumber):
+    def eigenfunction(self, thermal_velocity, alpha, ring_parameter, eigenvalue, wavenumber, amplitude):
         # Cylindrical coordinates grid set-up, using wave-number wavenumber
         u = outer3(self.u.arr, np.ones_like(self.v.arr), np.ones_like(self.w.arr))
         v = outer3(np.ones_like(self.u.arr), self.v.arr, np.ones_like(self.w.arr))
@@ -222,9 +222,11 @@ class PhaseSpace:
         v_cross_grad = r * df_dv_para - u * df_dv_perp
         A = df_dv_perp + v_cross_grad / zeta
 
-        eig = 1j * A * 0.5 * (np.exp(1j * phi) / denominator_p + np.exp(-1j * phi) / denominator_m)
+        eig = A * np.exp(1j*phi) / denominator_p
 
-        return cp.asarray(np.real(np.tensordot(np.exp(1j * wavenumber * self.x.arr), eig, axes=0)))
+        # eig = 1j * A * 0.5 * (np.exp(1j * phi) / denominator_p + np.exp(-1j * phi) / denominator_m)
+
+        return amplitude * cp.asarray(np.real(np.tensordot(np.exp(1j * wavenumber * self.x.arr), eig, axes=0)))
 
     def moment0(self, variable):
         return self.u.zero_moment(
@@ -252,7 +254,7 @@ class PhaseSpace:
         )
 
     def moment_u(self, variable):
-        integrand = self.u.device_arr[:, :, None, None, None, None, None] * variable
+        integrand = self.u.device_arr[None, :, :, None, None, None, None] * variable
         return self.u.zero_moment(
             function=self.v.zero_moment(
                 function=self.w.zero_moment(

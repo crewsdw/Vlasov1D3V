@@ -13,10 +13,10 @@ from copy import deepcopy
 # Normalization parameters
 om_pc, vt_c = 10.0, 0.1
 charge_sign = -1.0  # electron
-eigenvalue = 0.4096275588561705 + 0.4652331645969896j
+eigenvalue = -0.4096275588561705 + 0.4652331645969896j
 
 # elements and order
-elements, order = [8, 20, 20, 20], 10
+elements, order = [16, 20, 20, 20], 10
 
 # Geometry
 grid_fundamental = 0.1  # / om_pc
@@ -41,27 +41,32 @@ dynamic_fields.initialize(grid=grid, eigenvalue=eigenvalue)
 print(dynamic_fields.magnetic_x.arr_spectral)
 
 plotter = my_plt.Plotter(grid=grid)
-# plotter.spatial_scalar_plot(scalar=distribution.moment0, y_axis='Zero moment', spectrum=False)
-# plotter.spatial_scalar_plot(scalar=distribution.moment_v, y_axis='v moment', spectrum=False)
-# plotter.spatial_scalar_plot(scalar=distribution.moment_w, y_axis='w moment', spectrum=False)
-# plotter.show()
+plotter.spatial_scalar_plot(scalar=distribution.moment0, y_axis='Zero moment', spectrum=True)
+plotter.spatial_scalar_plot(scalar=distribution.moment_v, y_axis='v moment', spectrum=True)
+plotter.spatial_scalar_plot(scalar=distribution.moment_w, y_axis='w moment', spectrum=True)
+plotter.show()
 
 # plotter3 = my_plt.Plotter3D(grid=grid)
-# plotter3.distribution_contours3d(distribution=distribution, spectral_idx=0, ctype='real')
+ctype = 'absolute'
+# plotter3.distribution_contours3d(distribution=distribution, spectral_idx=0, ctype=ctype)
+# plotter3.distribution_contours3d(distribution=distribution, spectral_idx=1, ctype=ctype)
+# plotter3.distribution_contours3d(distribution=distribution, spectral_idx=2, ctype=ctype)
+# plotter3 = my_plt.Plotter3D(grid=grid)
+# plotter3.distribution_contours3d(distribution=distribution, spectral_idx=1, ctype='real')
 
 # Set up fluxes
 phase_space_flux = fx.PhaseSpaceFlux(resolutions=elements, x_modes=grid.x.modes,  # pad_width=grid.x.pad_width,
                                      order=order, charge_sign=charge_sign,
-                         om_pc=om_pc, nu=0, plotter=plotter)
+                                     om_pc=om_pc, nu=0, plotter=plotter)
 phase_space_flux.initialize_zero_pad(grid=grid)
 space_flux = fx.SpaceFlux(resolution=elements[0], c=1/vt_c)
 
 # Set up time-stepper
 print('Lorentz force dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*highs[1]/om_pc)))
-print('Spatial flux dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*highs[1]*grid.x.wavenumbers[-1])))
-dt = 1e-5  # 1.025e-02 * 1.0
-step = 1e-5  # 1.025e-02 * 1.0
-final_time = 1.0e-3
+print('Spatial flux dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*np.sqrt(2)*highs[1]*grid.x.wavenumbers[-1])))
+dt = 5.0e-3  # 1.025e-02 * 1.0
+step = 5.0e-3  # 1.025e-02 * 1.0
+final_time = 2.0e0
 steps = int(np.abs(final_time // dt))
 
 datafile = data.Data(folder='data\\', filename='test_may16')
@@ -77,6 +82,17 @@ stepper = ts.Stepper(dt=dt, resolutions=elements, order=order, steps=steps,  gri
                      phase_space_flux=phase_space_flux, space_flux=space_flux)
 stepper.main_loop(distribution=distribution, static_field=static_fields, dynamic_field=dynamic_fields,
                   grid=grid, data_file=data)
+
+# plotter = my_plt.Plotter(grid=grid)
+# plotter.spatial_scalar_plot(scalar=distribution.moment0, y_axis='Zero moment', spectrum=True)
+# plotter.spatial_scalar_plot(scalar=distribution.moment_v, y_axis='v moment', spectrum=True)
+# plotter.spatial_scalar_plot(scalar=distribution.moment_w, y_axis='w moment', spectrum=True)
+# plotter.show()
+
+# plotter3 = my_plt.Plotter3D(grid=grid)
+# plotter3.distribution_contours3d(distribution=distribution, spectral_idx=0, ctype=ctype)
+# plotter3.distribution_contours3d(distribution=distribution, spectral_idx=1, ctype=ctype)
+# plotter3.distribution_contours3d(distribution=distribution, spectral_idx=2, ctype=ctype)
 
 plotter.time_series_plot(time_in=stepper.time_array, series_in=stepper.ex_energy,
                          y_axis='Electric x energy', log=True, give_rate=False)

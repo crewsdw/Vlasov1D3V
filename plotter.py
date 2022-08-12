@@ -108,15 +108,16 @@ class Plotter3D:
 
         contours = np.array([np.amin(new_dist) / 7, np.amax(new_dist) / 7])
         # contours = np.linspace(np.amin(new_dist), np.amax(new_dist), num=12)
-        self.grid['.'] = new_dist.reshape(new_dist.shape[0] * new_dist.shape[1],
-                                          new_dist.shape[2] * new_dist.shape[3],
-                                          new_dist.shape[4] * new_dist.shape[5]).transpose().flatten()
+        self.grid['.'] = new_dist.reshape((new_dist.shape[0] * new_dist.shape[1],
+                                           new_dist.shape[2] * new_dist.shape[3],
+                                           new_dist.shape[4] * new_dist.shape[5])).transpose().flatten()
 
         plot_contours = self.grid.contour(contours)
 
         # Create plot
+        sargs = dict(interactive=True)
         p = pv.Plotter()
-        p.add_mesh(plot_contours, cmap='summer', opacity=1, show_scalar_bar=False)
+        p.add_mesh(plot_contours, cmap='summer', opacity=1, show_scalar_bar=True, scalar_bar_args=sargs)
         p.show_grid()
         p.show()  # auto_close=False)
 

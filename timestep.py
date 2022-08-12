@@ -59,6 +59,8 @@ class Stepper:
         print('Beginning main loop')
         # Compute first two steps with ssp-rk3 and save fluxes
         # zero stage
+        # distribution.compute_zero_moment()
+        # distribution.compute_moment_1(grid=grid)
         static_field.gauss(distribution=distribution, grid=grid)
         ps_flux0 = self.phase_space_flux.semi_discrete_rhs_semi_implicit(distribution=distribution,
                                                                          static_field=static_field,
@@ -270,8 +272,8 @@ class Stepper:
                  4 / 3 * previous_phase_space_fluxes[0] +
                  5 / 12 * previous_phase_space_fluxes[1]) +
                 0.5 * self.phase_space_flux.spectral_advection(distribution=distribution, grid=grid))
-        # distribution.arr_spectral = cp.einsum('nmjk,nmkrspq->nmjrspq',
-        #                                       self.implicit_x_advection_matrix, distribution.arr_spectral)
+        distribution.arr_spectral = cp.einsum('nmjk,nmkrspq->nmjrspq',
+                                              self.implicit_x_advection_matrix, distribution.arr_spectral)
         # distribution.arr_spectral = cp.einsum('nmjk,nmkrspq->nmjrspq',
         #                                       self.implicit_x_advection_matrix, distribution.arr_spectral)
         # dynamic field advance

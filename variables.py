@@ -79,9 +79,9 @@ class Distribution:
                                          axes=0)
 
         perturbation = grid.eigenfunction(thermal_velocity=vt, alpha=alpha, ring_parameter=ring_gamma,
-                                          eigenvalue=eigenvalue, wavenumber=wavenumber)
+                                          eigenvalue=eigenvalue, wavenumber=wavenumber, amplitude=1.0e-3)
 
-        self.arr_nodal = cp.asarray(ring_distribution + 1.0e-3 * perturbation)
+        self.arr_nodal = cp.asarray(ring_distribution + 0.0e-3 * perturbation)
         self.fourier_transform()
 
 

@@ -44,8 +44,8 @@ class Dynamic:
         self.eigenmode(grid=grid, amplitude=1.0e-3, wavenumber=0.1, eigenvalue=eigenvalue)  # ? 1.54j, 0.736j
 
         # For now: no fields
-        # self.electric_y.arr_nodal, self.electric_z.arr_nodal = self.electric_y.arr_nodal, 0 * self.electric_z.arr_nodal
-        # self.magnetic_y.arr_nodal, self.magnetic_z.arr_nodal = self.magnetic_y.arr_nodal, 0 * self.magnetic_z.arr_nodal
+        self.electric_y.arr_nodal, self.electric_z.arr_nodal = self.electric_y.arr_nodal, self.electric_z.arr_nodal
+        self.magnetic_y.arr_nodal, self.magnetic_z.arr_nodal = self.magnetic_y.arr_nodal, self.magnetic_z.arr_nodal
 
         # Initialize constant magnetic field
         self.magnetic_x.arr_nodal = cp.ones_like(self.magnetic_z.arr_nodal) / self.om_pc
@@ -73,8 +73,6 @@ class Dynamic:
         # wtf was I thinking?
         # self.magnetic_y.arr_nodal = cp.real(-1j * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr) / eigenvalue) / sq2
         # self.magnetic_z.arr_nodal = cp.real(amplitude * cp.exp(1j * wavenumber * grid.x.device_arr) / eigenvalue) / sq2
-
-
 
     def compute_magnetic_y_energy(self, grid):
         self.magnetic_y.inverse_fourier_transform(), self.magnetic_z.inverse_fourier_transform()
