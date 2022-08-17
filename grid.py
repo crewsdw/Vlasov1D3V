@@ -194,7 +194,8 @@ class PhaseSpace:
 
         return cp.asarray(maxwell * ring)
 
-    def eigenfunction(self, thermal_velocity, alpha, ring_parameter, eigenvalue, wavenumber, amplitude):
+    def eigenfunction(self, thermal_velocity, alpha, ring_parameter, eigenvalue, wavenumber, E_y, E_z):
+        ''' Now stupid-proof '''
         # Cylindrical coordinates grid set-up, using wave-number wavenumber
         u = outer3(self.u.arr, np.ones_like(self.v.arr), np.ones_like(self.w.arr))
         v = outer3(np.ones_like(self.u.arr), self.v.arr, np.ones_like(self.w.arr))
@@ -202,15 +203,19 @@ class PhaseSpace:
         r = np.sqrt(v ** 2.0 + w ** 2.0)
         phi = np.arctan2(w, v)
         # beta = - self.x.fundamental * r * self.om_pc
-        vt = alpha
+        # vt = alpha
 
         # radial gradient of distribution
-        x = 0.5 * (r / vt) ** 2.0
-        ring = 1 / (2.0 * np.pi * (vt ** 2.0) * sp.gamma(ring_parameter + 1.0)) * np.multiply(x ** ring_parameter,
-                                                                                            np.exp(-x))
+        # x = 0.5 * (r / vt) ** 2.0
+        # ring = 1 / (2.0 * np.pi * (vt ** 2.0) * sp.gamma(ring_parameter + 1.0)) * np.multiply(x ** ring_parameter,
+        #                                                                                     np.exp(-x))
+        x = (r / alpha) ** 2
+        ring = 1 / (np.pi * alpha**2 * sp.gamma(ring_parameter + 1.0)) * np.multiply(x ** ring_parameter, np.exp(-x))
+        ring_1 = 1 / (np.pi * alpha**2 * sp.gamma(ring_parameter)) * np.multiply(x ** (ring_parameter-1), np.exp(-x))
         maxwell = np.exp(-0.5 * u ** 2 / thermal_velocity ** 2) / np.sqrt(2 * np.pi * thermal_velocity ** 2)
         f = ring * maxwell
-        df_dv_perp = np.multiply(f, (ring_parameter / (x + 1.0e-16) - 1.0)) / (thermal_velocity ** 2.0)
+        # df_dv_perp = np.multiply(f, (ring_parameter / (x + 1.0e-16) - 1.0)) / (thermal_velocity ** 2.0)
+        df_dv_perp = np.multiply(maxwell, r * (ring_1 - ring)/(2 * alpha**2))
         df_dv_para = np.multiply(f, u / thermal_velocity ** 2)
 
         # set up eigenmode
@@ -218,15 +223,24 @@ class PhaseSpace:
         zeta = eigenvalue
         denominator_p = zeta - u - zeta_cyclotron
         denominator_m = zeta - u + zeta_cyclotron
+        fac1 = np.exp(1j*phi) / denominator_p
+        fac2 = np.exp(-1j*phi) / denominator_m
 
         v_cross_grad = r * df_dv_para - u * df_dv_perp
-        A = df_dv_perp + v_cross_grad / zeta
-
-        eig = A * np.exp(1j*phi) / denominator_p
+        A = df_dv_perp - v_cross_grad / zeta
+        sq2 = cp.sqrt(2)
+        amplitude = 1.0e-3
+        # E_y = 1.0j / sq2 * amplitude  # * cp.exp(1j * wavenumber * self.x.device_arr)
+        # E_z = 1.0 / sq2 * amplitude  # * cp.exp(1j * wavenumber * self.x.device_arr)
+        # eig = A * np.exp(1j*phi) / denominator_p
+        eig = -1j * A * (E_y.get() * (fac1 + fac2) + 1j * E_z.get() * (fac1 - fac2)) / 2.0 / wavenumber
+        # eig = 1.0 / sq2.get() * amplitude * A * np.exp(1j * phi) / denominator_p
+        # eig = 1.0e-3 * -1j * A * (1.0 * (fac1 + fac2) + 1j * (1j) * (fac1 - fac2)) / 2.0 / wavenumber
 
         # eig = 1j * A * 0.5 * (np.exp(1j * phi) / denominator_p + np.exp(-1j * phi) / denominator_m)
+        # eig = 1.0e-3 * df_dv_perp * np.exp(1j * phi)
 
-        return amplitude * cp.asarray(np.real(np.tensordot(np.exp(1j * wavenumber * self.x.arr), eig, axes=0)))
+        return cp.asarray(np.real(np.tensordot(np.exp(1j * wavenumber * self.x.arr), eig, axes=0)))
 
     def moment0(self, variable):
         return self.u.zero_moment(

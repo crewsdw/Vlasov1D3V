@@ -11,40 +11,61 @@ import timestep as ts
 from copy import deepcopy
 
 # Normalization parameters
-om_pc, vt_c = 10.0, 0.1
+om_pc, vt_c = 10.0, 0.1  # 0.1
 charge_sign = -1.0  # electron
-eigenvalue = -0.4096275588561705 + 0.4652331645969896j
+# eigenvalue = 0.12721160224570427 + 0.7777815241590355j
+# eigenvalue = -0.5813939194797665 + 0.47487085962291437j
+eigenvalue = 0.4096275588561705 + 0.4652331645969896j
+# eigenvalue = 1.5867126026383591 + 0.47966536397472853j
 
 # elements and order
-elements, order = [16, 20, 20, 20], 10
+elements, order = [10, 20, 20, 20], 10
 
 # Geometry
-grid_fundamental = 0.1  # / om_pc
+grid_fundamental = 0.1  # 0.1  # / om_pc
 length = 2.0 * np.pi / grid_fundamental
 lows = np.array([-0.5 * length, -10, -10, -10])
 highs = np.array([0.5 * length, 10, 10, 10])
 grid = g.PhaseSpace(lows=lows, highs=highs, elements=elements, order=order, charge_sign=charge_sign, om_pc=om_pc)
 
-# build distribution
-distribution = var.Distribution(resolutions=elements, order=order)
-distribution.initialize(grid=grid, vt=1, alpha=1, ring_gamma=6, wavenumber=grid_fundamental, eigenvalue=eigenvalue)
-distribution.compute_zero_moment(grid=grid)
-distribution.compute_moment_1(grid=grid)
-# distribution.fourier_transform()
-# distribution.inverse_fourier_transform()
+om = eigenvalue * grid_fundamental
+print(om)
+j_e_factor = 1j * om * (1 - 1 / (eigenvalue**2) / (vt_c**2))
+print(j_e_factor)
 
 # static and dynamic fields
-static_fields = fields.Static(resolution=elements[0])
-static_fields.gauss(distribution=distribution, grid=grid)
 dynamic_fields = fields.Dynamic(resolution=elements[0], vt_c=vt_c, om_pc=om_pc)
 dynamic_fields.initialize(grid=grid, eigenvalue=eigenvalue)
 print(dynamic_fields.magnetic_x.arr_spectral)
+jy_target = j_e_factor * dynamic_fields.electric_y.arr_spectral[1]
+jz_target = j_e_factor * dynamic_fields.electric_z.arr_spectral[1]
+# print('\nTarget currents')
+# print(jy_target)
+# print(jz_target)
+
+# build distribution
+distribution = var.Distribution(resolutions=elements, order=order)
+distribution.initialize(grid=grid, vt=1, alpha=1, ring_gamma=6, wavenumber=grid_fundamental, eigenvalue=eigenvalue,
+                        E_y=dynamic_fields.electric_y.arr_spectral[1], E_z=dynamic_fields.electric_z.arr_spectral[1])
+distribution.compute_zero_moment(grid=grid)
+distribution.compute_moment_1(grid=grid)
+# print('\nActual currents')
+# print(-1.0 * distribution.moment_v.arr_spectral[1])
+# print(-1.0 * distribution.moment_w.arr_spectral[1])
+# quit()
+
+static_fields = fields.Static(resolution=elements[0])
+static_fields.gauss(distribution=distribution, grid=grid)
+# distribution.fourier_transform()
+# distribution.inverse_fourier_transform()
 
 plotter = my_plt.Plotter(grid=grid)
-plotter.spatial_scalar_plot(scalar=distribution.moment0, y_axis='Zero moment', spectrum=True)
-plotter.spatial_scalar_plot(scalar=distribution.moment_v, y_axis='v moment', spectrum=True)
-plotter.spatial_scalar_plot(scalar=distribution.moment_w, y_axis='w moment', spectrum=True)
-plotter.show()
+# plotter.spatial_scalar_plot(scalar=distribution.moment0, y_axis='Zero moment', spectrum=True)
+# plotter.spatial_scalar_plot(scalar=distribution.moment_v, y_axis='v moment', spectrum=True)
+# plotter.spatial_scalar_plot(scalar=distribution.moment_w, y_axis='w moment', spectrum=True)
+# plotter.spatial_scalar_plot(scalar=dynamic_fields.electric_y, y_axis='E_y', spectrum=True)
+# plotter.spatial_scalar_plot(scalar=dynamic_fields.electric_z, y_axis='E_z', spectrum=True)
+# plotter.show()
 
 # plotter3 = my_plt.Plotter3D(grid=grid)
 ctype = 'absolute'
@@ -55,7 +76,7 @@ ctype = 'absolute'
 # plotter3.distribution_contours3d(distribution=distribution, spectral_idx=1, ctype='real')
 
 # Set up fluxes
-phase_space_flux = fx.PhaseSpaceFlux(resolutions=elements, x_modes=grid.x.modes,  # pad_width=grid.x.pad_width,
+phase_space_flux = fx.PhaseSpaceFlux(resolutions=elements, x_modes=grid.x.modes,  # pad_width=grid.x.pqad_width,
                                      order=order, charge_sign=charge_sign,
                                      om_pc=om_pc, nu=0, plotter=plotter)
 phase_space_flux.initialize_zero_pad(grid=grid)
@@ -64,9 +85,10 @@ space_flux = fx.SpaceFlux(resolution=elements[0], c=1/vt_c)
 # Set up time-stepper
 print('Lorentz force dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*highs[1]/om_pc)))
 print('Spatial flux dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*np.sqrt(2)*highs[1]*grid.x.wavenumbers[-1])))
-dt = 5.0e-3  # 1.025e-02 * 1.0
-step = 5.0e-3  # 1.025e-02 * 1.0
-final_time = 2.0e0
+dt = 1.0e-4  # 1.025e-02 * 1.0
+step = 1.0e-4  # 1.025e-02 * 1.0
+final_time = 1.0e-2
+
 steps = int(np.abs(final_time // dt))
 
 datafile = data.Data(folder='data\\', filename='test_may16')
@@ -108,6 +130,8 @@ plotter.time_series_plot(time_in=stepper.time_array, series_in=stepper.thermal_e
                          y_axis='Thermal energy', log=False)
 plotter.time_series_plot(time_in=stepper.time_array, series_in=stepper.density_array,
                          y_axis='Total density', log=False)
+plotter.spatial_scalar_plot(scalar=distribution.moment_v, y_axis=r'velocity $v_y$', spectrum=True)
+plotter.spatial_scalar_plot(scalar=dynamic_fields.electric_y, y_axis=r'field $E_y$', spectrum=True)
 plotter.time_series_plot(time_in=stepper.time_array, series_in=(stepper.ex_energy + stepper.ey_energy +
                                                                 stepper.ez_energy + stepper.by_energy +
                                                                 stepper.bz_energy + stepper.thermal_energy),

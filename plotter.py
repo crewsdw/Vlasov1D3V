@@ -14,16 +14,34 @@ class Plotter:
         self.k = grid.x.wavenumbers / grid.x.fundamental
         self.length = grid.x.length
 
-    def velocity_contour_plot(self, scalar, order, index):
+        self.resolutions = None
+
+    def velocity_contour_plot(self, scalar, x_idx, vel, vel_idx):
         self.resolutions = scalar.shape
-        self.order = order
+        # self.order = order
         flattened_dist = scalar.reshape(self.resolutions[0],
                                         self.resolutions[1] * self.resolutions[2], self.resolutions[3] * self.resolutions[4],
                                         self.resolutions[5] * self.resolutions[6])
+
+        if vel == 0:
+            to_plot = flattened_dist[x_idx, vel_idx, :, :].get()
+            ax0, ax1 = 'v', 'w'
+        if vel == 1:
+            to_plot = flattened_dist[x_idx, :, vel_idx, :].get()
+            ax0, ax1 = 'u', 'w'
+        if vel == 2:
+            to_plot = flattened_dist[x_idx, :, :, vel_idx].get()
+            ax0, ax1 = 'u', 'v'
+        if vel > 2:
+            to_plot = 0
+            return
+
         plt.figure()
-        cb = np.linspace(np.amin(flattened_dist[0, :, index, :]), np.amax(flattened_dist[0, :, index, :]), num=100)
-        plt.contourf(self.U, self.V, flattened_dist[0, :, index, :], cb)
-        plt.xlabel('u'), plt.ylabel('v'), plt.tight_layout()
+        cb = np.linspace(np.amin(to_plot),
+                         np.amax(to_plot), num=100)
+        # plt.imshow(to_plot)
+        plt.contourf(self.U, self.V, to_plot, cb)
+        plt.xlabel(ax0), plt.ylabel(ax1), plt.tight_layout()
         plt.colorbar()
         # plt.show()
 
@@ -39,8 +57,9 @@ class Plotter:
         if spectrum:
             plt.figure()
             spectrum = scalar.arr_spectral.flatten().get()
-            plt.plot(self.k.flatten(), np.real(spectrum), 'ro', label='real')
-            plt.plot(self.k.flatten(), np.imag(spectrum), 'go', label='imaginary')
+            plt.semilogy(self.k.flatten(), np.absolute(spectrum), 'ro', label='absolute value')
+            # plt.plot(self.k.flatten(), np.real(spectrum), 'ro', label='real')
+            # plt.plot(self.k.flatten(), np.imag(spectrum), 'go', label='imaginary')
             plt.xlabel('Modes'), plt.ylabel(y_axis + ' spectrum')
             plt.grid(True), plt.legend(loc='best'), plt.tight_layout()
 

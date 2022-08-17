@@ -44,8 +44,8 @@ class Dynamic:
         self.eigenmode(grid=grid, amplitude=1.0e-3, wavenumber=0.1, eigenvalue=eigenvalue)  # ? 1.54j, 0.736j
 
         # For now: no fields
-        self.electric_y.arr_nodal, self.electric_z.arr_nodal = self.electric_y.arr_nodal, self.electric_z.arr_nodal
-        self.magnetic_y.arr_nodal, self.magnetic_z.arr_nodal = self.magnetic_y.arr_nodal, self.magnetic_z.arr_nodal
+        # self.electric_y.arr_nodal, self.electric_z.arr_nodal = self.electric_y.arr_nodal, self.electric_z.arr_nodal
+        # self.magnetic_y.arr_nodal, self.magnetic_z.arr_nodal = self.magnetic_y.arr_nodal, self.magnetic_z.arr_nodal
 
         # Initialize constant magnetic field
         self.magnetic_x.arr_nodal = cp.ones_like(self.magnetic_z.arr_nodal) / self.om_pc
@@ -62,8 +62,8 @@ class Dynamic:
         # Nodal values (need to think about this some more)
         # self.magnetic_x = self.om_pc  # cp.real()
         sq2 = cp.sqrt(2)
-        eig_y = 1j / sq2 * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr)
-        eig_z = 1.0 / sq2 * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr)
+        eig_y = 1.0 / sq2 * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr)
+        eig_z = 1.0j / sq2 * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr)
         self.electric_y.arr_nodal = cp.real(eig_y)
         self.electric_z.arr_nodal = cp.real(eig_z)
 

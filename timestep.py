@@ -45,7 +45,7 @@ class Stepper:
 
     def build_advection_matrix(self, grid):
         """ Construct the global backward advection matrix """
-        backward_advection_operator = (cp.eye(grid.v.order)[None, None, :, :] -
+        backward_advection_operator = (cp.eye(grid.u.order)[None, None, :, :] -
                                        0.5 * self.dt * -1j * grid.x.device_wavenumbers[:, None, None, None] *
                                        grid.u.translation_matrix[None, :, :, :])
         # forward_advection_operator = (cp.eye(grid.u.order)[None, None, :, :] +
@@ -73,11 +73,16 @@ class Stepper:
         self.time += self.dt
 
         # first stage
+        static_field.gauss(distribution=distribution, grid=grid)
         ps_flux1 = self.phase_space_flux.semi_discrete_rhs_semi_implicit(distribution=distribution,
                                                                          static_field=static_field,
                                                                          dynamic_field=dynamic_field, grid=grid)
         ey_flux1, ez_flux1 = self.space_flux.ampere(distribution=distribution, dynamic_field=dynamic_field, grid=grid)
         by_flux1, bz_flux1 = self.space_flux.faraday(dynamic_field=dynamic_field, grid=grid)
+
+        # second step
+        self.ssp_rk3(distribution=distribution, static_field=static_field, dynamic_field=dynamic_field, grid=grid)
+        self.time += self.dt
 
         # store first two fluxes
         previous_phase_space_fluxes = [ps_flux1, ps_flux0]
@@ -103,7 +108,7 @@ class Stepper:
                 self.ey_energy = np.append(self.ey_energy, dynamic_field.compute_electric_y_energy(grid=grid).get())
                 self.ez_energy = np.append(self.ez_energy, dynamic_field.compute_electric_z_energy(grid=grid).get())
                 self.by_energy = np.append(self.by_energy, dynamic_field.compute_magnetic_y_energy(grid=grid).get())
-                self.bz_energy = np.append(self.bz_energy, dynamic_field.compute_magnetic_y_energy(grid=grid).get())
+                self.bz_energy = np.append(self.bz_energy, dynamic_field.compute_magnetic_z_energy(grid=grid).get())  # another DAMN typo
                 self.thermal_energy = np.append(self.thermal_energy, distribution.total_thermal_energy(grid=grid).get())
                 self.density_array = np.append(self.density_array, distribution.total_density(grid=grid).get())
                 print('\nTook 5 steps, time is {:0.3e}'.format(self.time))
@@ -142,7 +147,6 @@ class Stepper:
 
         # zero stage
         static_field.gauss(distribution=distribution, grid=grid)
-        #
         phase_space_rhs = self.phase_space_flux.semi_discrete_rhs_fully_explicit(distribution=distribution,
                                                                                  static_field=static_field,
                                                                                  dynamic_field=dynamic_field, grid=grid)
@@ -156,8 +160,7 @@ class Stepper:
         # magnetic_y_rhs[grid.x.device_modes > cutoff] = 0
         # magnetic_z_rhs[grid.x.device_modes > cutoff] = 0
         #
-        phase_space_stage0.arr_spectral = (distribution.arr_spectral +
-                                           self.dt * phase_space_rhs)
+        phase_space_stage0.arr_spectral = (distribution.arr_spectral + self.dt * phase_space_rhs)
         dynamic_field_stage0.electric_y.arr_spectral = (dynamic_field.electric_y.arr_spectral +
                                                         self.dt * electric_y_rhs)
         dynamic_field_stage0.electric_z.arr_spectral = (dynamic_field.electric_z.arr_spectral +
@@ -170,13 +173,12 @@ class Stepper:
 
         # first stage
         static_field.gauss(distribution=phase_space_stage0, grid=grid)
-        #
         phase_space_rhs = self.phase_space_flux.semi_discrete_rhs_fully_explicit(distribution=phase_space_stage0,
                                                                                  static_field=static_field,
                                                                                  dynamic_field=dynamic_field_stage0,
                                                                                  grid=grid)
-        electric_y_rhs, electric_z_rhs = self.space_flux.ampere(distribution=distribution,
-                                                dynamic_field=dynamic_field_stage0, grid=grid)
+        electric_y_rhs, electric_z_rhs = self.space_flux.ampere(distribution=phase_space_stage0,
+                                                                dynamic_field=dynamic_field_stage0, grid=grid)
         magnetic_y_rhs, magnetic_z_rhs = self.space_flux.faraday(dynamic_field=dynamic_field_stage0, grid=grid)
         # print('Here')
         # #
@@ -223,12 +225,11 @@ class Stepper:
         electric_y_rhs, electric_z_rhs = self.space_flux.ampere(distribution=phase_space_stage1,
                                                                 dynamic_field=dynamic_field_stage1, grid=grid)
         magnetic_y_rhs, magnetic_z_rhs = self.space_flux.faraday(dynamic_field=dynamic_field_stage1, grid=grid)
-        print('and Here')
+        # print('and Here')
         #
         # phase_space_rhs[grid.x.device_modes > cutoff, :, :, :, :] = 0
         # electric_y_rhs[grid.x.device_modes > cutoff] = 0
         # magnetic_z_rhs[grid.x.device_modes > cutoff] = 0
-        #
         distribution.arr_spectral = (
                 self.rk_coefficients[1, 0] * distribution.arr_spectral +
                 self.rk_coefficients[1, 1] * phase_space_stage1.arr_spectral +

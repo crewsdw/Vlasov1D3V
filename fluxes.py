@@ -1,5 +1,6 @@
 import cupy as cp
 # import variables as var
+import plotter as my_plt
 
 # For testing
 import matplotlib.pyplot as plt
@@ -149,7 +150,7 @@ class PhaseSpaceFlux:
                                    self.resolutions[1], self.order,
                                    self.resolutions[2] + 2, self.order,
                                    self.resolutions[3], self.order),
-                                  
+
                                   (self.resolutions[0],
                                    self.resolutions[1], self.order,
                                    self.resolutions[2], self.order,
@@ -192,24 +193,24 @@ class PhaseSpaceFlux:
         nodal_flux = cp.multiply(field_nodal[:, None, None, None, None, None, None], distr_nodal)
         return cp.fft.rfft(nodal_flux, axis=0, norm='forward')[:-grid.x.pad_width, :, :, :, :, :, :]
 
-    def compute_internal_and_numerical_flux_u(self, distribution, electric_field,
+    def compute_internal_and_numerical_flux_u(self, distribution, electric_field_x,
                                               magnetic_field_y, magnetic_field_z, grid):
         """ Compute the flux convolution(field, distribution) using pseudospectral method
             and compute the numerical flux by upwinding """
         # Pad the fields
-        self.pad_electric_field[:-grid.x.pad_width] = electric_field.arr_spectral
+        self.pad_electric_field[:-grid.x.pad_width] = electric_field_x.arr_spectral
         self.pad_magnetic_fields[0, :-grid.x.pad_width] = magnetic_field_y.arr_spectral
         self.pad_magnetic_fields[1, :-grid.x.pad_width] = magnetic_field_z.arr_spectral
         self.pad_spectrum[:-grid.x.pad_width, :, :, :, :, :, :] = distribution.arr_spectral
 
         # Pseudospectral products
-        electric_field_nodal = cp.fft.irfft(self.pad_electric_field, norm='forward', axis=0)
+        e_x = cp.fft.irfft(self.pad_electric_field, norm='forward', axis=0)
         b_y = cp.fft.irfft(self.pad_magnetic_fields[0, :], norm='forward', axis=0)
         b_z = cp.fft.irfft(self.pad_magnetic_fields[1, :], norm='forward', axis=0)
         distribution_nodal = cp.fft.irfft(self.pad_spectrum, norm='forward', axis=0)
 
         # Compute nodal fluxes (component-wise Lorentz force)
-        field = self.charge_sign * (electric_field_nodal[:, None, None, None, None] + (
+        field = self.charge_sign * (e_x[:, None, None, None, None] + (
                 (grid.v.device_arr[None, :, :, None, None] *
                  b_z[:, None, None, None, None]) -
                 (grid.w.device_arr[None, None, None, :, :] *
@@ -220,29 +221,40 @@ class PhaseSpaceFlux:
 
         # Compute upwind flux based on nodal flux
         nodal_num_flux = self.nodal_upwind_flux_u(flux=nodal_flux, field=field, dim=0)
+        # full_num_flux = cp.zeros_like(nodal_flux)
+        # full_num_flux[:, :, :, :, 0, :, :] = nodal_num_flux[:, :, :, :, 0, :, :]
+        # full_num_flux[:, :, :, :, -1, :, :] = nodal_num_flux[:, :, :, :, 1, :, :]
+        #
+        # print('At plotter')
+        # plotter = my_plt.Plotter(grid=grid)
+        # plotter.velocity_contour_plot(scalar=nodal_flux, x_idx=1, vel=0, vel_idx=100)
+        # plotter.velocity_contour_plot(scalar=full_num_flux, x_idx=1, vel=0, vel_idx=100)
+        # plt.show()
+        # plotter.show()
 
         # Return internal flux and numerical fluxes in spectral variables
         return (cp.fft.rfft(nodal_flux, axis=0, norm='forward')[:-grid.x.pad_width, :, :, :, :, :, :],
                 cp.fft.rfft(nodal_num_flux, axis=0, norm='forward')[:-grid.x.pad_width, :, :, :, :, :, :])
 
-    def compute_internal_and_numerical_flux_v(self, distribution,
+    def compute_internal_and_numerical_flux_v(self, distribution, electric_field_y,
                                               magnetic_field_x, magnetic_field_z, grid):
         """ Compute the flux convolution(field, distribution) using pseudospectral method
             and compute the numerical flux by upwinding """
         # Pad the fields
-        # print(magnetic_field_x.arr_spectral)
+        self.pad_electric_field[:-grid.x.pad_width] = electric_field_y.arr_spectral
         self.pad_magnetic_fields[0, :-grid.x.pad_width] = magnetic_field_x.arr_spectral
         self.pad_magnetic_fields[1, :-grid.x.pad_width] = magnetic_field_z.arr_spectral
         self.pad_spectrum[:-grid.x.pad_width, :, :, :, :, :, :] = distribution.arr_spectral
 
         # Pseudospectral products
+        e_y = cp.fft.irfft(self.pad_electric_field, norm='forward', axis=0)
         b_x = cp.fft.irfft(self.pad_magnetic_fields[0, :], norm='forward', axis=0)
         b_z = cp.fft.irfft(self.pad_magnetic_fields[1, :], norm='forward', axis=0)
         distribution_nodal = cp.fft.irfft(self.pad_spectrum, norm='forward', axis=0)
 
         # Compute nodal fluxes (component-wise Lorentz force)
-        field = self.charge_sign * -1.0 * (
-                (grid.u.device_arr[None, :, :, None, None] *
+        field = self.charge_sign * (e_y[:, None, None, None, None] +
+                -1.0 * (grid.u.device_arr[None, :, :, None, None] *
                  b_z[:, None, None, None, None]) -
                 (grid.w.device_arr[None, None, None, :, :] *
                  b_x[:, None, None, None, None])
@@ -253,27 +265,42 @@ class PhaseSpaceFlux:
 
         # Compute upwind flux based on nodal flux
         nodal_num_flux = self.nodal_upwind_flux_v(flux=nodal_flux, field=field, dim=1)
+        # full_num_flux = cp.zeros_like(nodal_flux)
+        # full_num_flux[:, :, :, :, 0, :, :] = nodal_num_flux[:, :, :, :, 0, :, :]
+        # full_num_flux[:, :, :, :, -1, :, :] = nodal_num_flux[:, :, :, :, 1, :, :]
+        #
+        # print('At plotter')
+        # x_idx = 3
+        # print(e_y[x_idx])
+        # print(b_z[x_idx])
+        # plotter = my_plt.Plotter(grid=grid)
+        # plotter.velocity_contour_plot(scalar=nodal_flux, x_idx=x_idx, vel=2, vel_idx=100)
+        # plotter.velocity_contour_plot(scalar=full_num_flux, x_idx=x_idx, vel=2, vel_idx=100)
+        # plt.show()
+        # plotter.show()
 
         # Return internal flux and numerical fluxes in spectral variables
         return (cp.fft.rfft(nodal_flux, axis=0, norm='forward')[:-grid.x.pad_width, :, :, :, :, :, :],
                 cp.fft.rfft(nodal_num_flux, axis=0, norm='forward')[:-grid.x.pad_width, :, :, :, :, :, :])
 
-    def compute_internal_and_numerical_flux_w(self, distribution,
+    def compute_internal_and_numerical_flux_w(self, distribution, electric_field_z,
                                               magnetic_field_x, magnetic_field_y, grid):
         """ Compute the flux convolution(field, distribution) using pseudospectral method
             and compute the numerical flux by upwinding """
         # Pad the fields
+        self.pad_electric_field[:-grid.x.pad_width] = electric_field_z.arr_spectral
         self.pad_magnetic_fields[0, :-grid.x.pad_width] = magnetic_field_x.arr_spectral
         self.pad_magnetic_fields[1, :-grid.x.pad_width] = magnetic_field_y.arr_spectral
         self.pad_spectrum[:-grid.x.pad_width, :, :, :, :, :, :] = distribution.arr_spectral
 
         # Pseudospectral products
+        e_z = cp.fft.irfft(self.pad_electric_field, norm='forward', axis=0)
         b_x = cp.fft.irfft(self.pad_magnetic_fields[0, :], norm='forward', axis=0)
         b_y = cp.fft.irfft(self.pad_magnetic_fields[1, :], norm='forward', axis=0)
         distribution_nodal = cp.fft.irfft(self.pad_spectrum, norm='forward', axis=0)
 
         # Compute nodal fluxes (component-wise Lorentz force)
-        field = self.charge_sign * (
+        field = self.charge_sign * (e_z[:, None, None, None, None] +
                 (grid.u.device_arr[None, :, :, None, None] *
                  b_y[:, None, None, None, None]) -
                 (grid.v.device_arr[None, None, None, :, :] *
@@ -336,7 +363,7 @@ class PhaseSpaceFlux:
         #                 self.compute_spectral_flux(distribution=distribution,
         #                                            field=dynamic_field.magnetic_y, grid=grid))
         flux, num_flux = self.compute_internal_and_numerical_flux_u(distribution=distribution,
-                                                                    electric_field=static_field.electric_x,
+                                                                    electric_field_x=static_field.electric_x,
                                                                     magnetic_field_y=dynamic_field.magnetic_y,
                                                                     magnetic_field_z=dynamic_field.magnetic_z,
                                                                     grid=grid)
@@ -360,6 +387,7 @@ class PhaseSpaceFlux:
         # for constant x-field
         # flux += (grid.w.device_arr[None, None, None, None, None, :, :] * distribution.arr_spectral / self.om_pc)
         flux, num_flux = self.compute_internal_and_numerical_flux_v(distribution=distribution,
+                                                                    electric_field_y=dynamic_field.electric_y,
                                                                     magnetic_field_x=dynamic_field.magnetic_x,
                                                                     magnetic_field_z=dynamic_field.magnetic_z,
                                                                     grid=grid)
@@ -386,6 +414,7 @@ class PhaseSpaceFlux:
         # flux += -1.0 * (grid.v.device_arr[None, None, None, :, :, None, None] *
         # # distribution.arr_spectral / self.om_pc)
         flux, num_flux = self.compute_internal_and_numerical_flux_w(distribution=distribution,
+                                                                    electric_field_z=dynamic_field.electric_z,
                                                                     magnetic_field_x=dynamic_field.magnetic_x,
                                                                     magnetic_field_y=dynamic_field.magnetic_y,
                                                                     grid=grid)
@@ -505,6 +534,13 @@ class PhaseSpaceFlux:
 
         # set padded flux
         padded_flux = cp.zeros(self.padded_flux_sizes[dim])  # + 0j
+        # print(self.flux_input_slices[dim])
+        # print(self.boundary_slices_pad[dim][1])
+        # print(one_negatives.shape)
+        # print(self.pad_slices[dim])
+        # print(self.directions[dim])
+        # print(padded_flux[self.boundary_slices_pad[dim][0]].shape)
+        # quit()
         padded_flux[self.flux_input_slices[dim]] = flux
         # padded_flux[:, 0, -1] = 0.0  # -self.flux.arr[:, 0, 0]
         # padded_flux[:, -1, 0] = 0.0  # -self.flux.arr[:, -1, 0]
