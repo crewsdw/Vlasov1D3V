@@ -85,9 +85,9 @@ space_flux = fx.SpaceFlux(resolution=elements[0], c=1/vt_c)
 # Set up time-stepper
 print('Lorentz force dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*highs[1]/om_pc)))
 print('Spatial flux dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*np.sqrt(2)*highs[1]*grid.x.wavenumbers[-1])))
-dt = 1.0e-4  # 1.025e-02 * 1.0
-step = 1.0e-4  # 1.025e-02 * 1.0
-final_time = 1.0e-2
+dt = 5.0e-5  # 1.025e-02 * 1.0
+step = 5.0e-5  # 1.025e-02 * 1.0
+final_time = 5.0e-3
 
 steps = int(np.abs(final_time // dt))
 

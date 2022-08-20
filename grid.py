@@ -233,12 +233,14 @@ class PhaseSpace:
         # E_y = 1.0j / sq2 * amplitude  # * cp.exp(1j * wavenumber * self.x.device_arr)
         # E_z = 1.0 / sq2 * amplitude  # * cp.exp(1j * wavenumber * self.x.device_arr)
         # eig = A * np.exp(1j*phi) / denominator_p
-        eig = -1j * A * (E_y.get() * (fac1 + fac2) + 1j * E_z.get() * (fac1 - fac2)) / 2.0 / wavenumber
+        # eig = -1j * A * (E_y.get() * (fac1 + fac2) + 1j * E_z.get() * (fac1 - fac2)) / 2.0 / wavenumber
         # eig = 1.0 / sq2.get() * amplitude * A * np.exp(1j * phi) / denominator_p
         # eig = 1.0e-3 * -1j * A * (1.0 * (fac1 + fac2) + 1j * (1j) * (fac1 - fac2)) / 2.0 / wavenumber
 
         # eig = 1j * A * 0.5 * (np.exp(1j * phi) / denominator_p + np.exp(-1j * phi) / denominator_m)
-        # eig = 1.0e-3 * df_dv_perp * np.exp(1j * phi)
+
+        ''' Testing: Pure transverse current mode '''
+        eig = 1.0e-3 * df_dv_perp * np.exp(1j * phi)
 
         return cp.asarray(np.real(np.tensordot(np.exp(1j * wavenumber * self.x.arr), eig, axes=0)))
 

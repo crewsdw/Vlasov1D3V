@@ -253,11 +253,11 @@ class PhaseSpaceFlux:
         distribution_nodal = cp.fft.irfft(self.pad_spectrum, norm='forward', axis=0)
 
         # Compute nodal fluxes (component-wise Lorentz force)
-        field = self.charge_sign * (e_y[:, None, None, None, None] +
-                -1.0 * (grid.u.device_arr[None, :, :, None, None] *
+        field = self.charge_sign * (e_y[:, None, None, None, None] - (
+                (grid.u.device_arr[None, :, :, None, None] *
                  b_z[:, None, None, None, None]) -
                 (grid.w.device_arr[None, None, None, :, :] *
-                 b_x[:, None, None, None, None])
+                 b_x[:, None, None, None, None]))
         )
         # field = field * cp.ones_like(distribution_nodal)
         nodal_flux = cp.multiply(field[:, :, :, None, None, :, :],
@@ -301,10 +301,8 @@ class PhaseSpaceFlux:
 
         # Compute nodal fluxes (component-wise Lorentz force)
         field = self.charge_sign * (e_z[:, None, None, None, None] +
-                (grid.u.device_arr[None, :, :, None, None] *
-                 b_y[:, None, None, None, None]) -
-                (grid.v.device_arr[None, None, None, :, :] *
-                 b_x[:, None, None, None, None])
+                (grid.u.device_arr[None, :, :, None, None] * b_y[:, None, None, None, None]) -
+                (grid.v.device_arr[None, None, None, :, :] * b_x[:, None, None, None, None])
         )
         nodal_flux = cp.multiply(field[:, :, :, :, :, None, None],
                                  distribution_nodal)

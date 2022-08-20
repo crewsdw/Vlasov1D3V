@@ -44,8 +44,8 @@ class Dynamic:
         self.eigenmode(grid=grid, amplitude=1.0e-3, wavenumber=0.1, eigenvalue=eigenvalue)  # ? 1.54j, 0.736j
 
         # For now: no fields
-        # self.electric_y.arr_nodal, self.electric_z.arr_nodal = self.electric_y.arr_nodal, self.electric_z.arr_nodal
-        # self.magnetic_y.arr_nodal, self.magnetic_z.arr_nodal = self.magnetic_y.arr_nodal, self.magnetic_z.arr_nodal
+        self.electric_y.arr_nodal, self.electric_z.arr_nodal = 0*self.electric_y.arr_nodal, 0*self.electric_z.arr_nodal
+        self.magnetic_y.arr_nodal, self.magnetic_z.arr_nodal = 0*self.magnetic_y.arr_nodal, 0*self.magnetic_z.arr_nodal
 
         # Initialize constant magnetic field
         self.magnetic_x.arr_nodal = cp.ones_like(self.magnetic_z.arr_nodal) / self.om_pc
