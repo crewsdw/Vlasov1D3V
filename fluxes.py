@@ -259,6 +259,7 @@ class PhaseSpaceFlux:
                 (grid.w.device_arr[None, None, None, :, :] *
                  b_x[:, None, None, None, None]))
         )
+
         # field = field * cp.ones_like(distribution_nodal)
         nodal_flux = cp.multiply(field[:, :, :, None, None, :, :],
                                  distribution_nodal)

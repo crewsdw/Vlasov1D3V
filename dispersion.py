@@ -5,7 +5,7 @@ import scipy.optimize as opt
 import plasma_dispersion as pd
 
 k = 0.01
-vt_c = 0.3
+vt_c = 0.1
 sq2 = 2 ** 0.5
 gamma = 6
 alpha = 1
@@ -125,7 +125,7 @@ mu_p = dispersion_function_plus(k, z, gamma)
 # mu_m = dispersion_function_minus(k, z)
 
 solution = opt.root(dispersion_fsolve_plus, x0=np.array([1.586, 0.479]),
-                    args=(0.2, gamma), jac=jacobian_fsolve_plus, tol=1.0e-10)
+                    args=(0.1, gamma), jac=jacobian_fsolve_plus, tol=1.0e-10)
 # print(solution.x)
 z_sol = solution.x[0] + 1j * solution.x[1]
 print('\n Solution at target wavenumber: ')
@@ -152,12 +152,13 @@ plt.show()
 # plt.grid(True), plt.title(r'Dispersion function $\mathcal{D}_-$'), plt.tight_layout()
 
 # Build a dispersion curve
-gammas = np.linspace(0, 8, num=35)
+gammas = np.linspace(0, 8, num=9)
+print(gammas[6])
 solution = opt.root(dispersion_fsolve_plus, x0=np.array([0, 0.8]),
                     args=(k, gammas[0]), jac=jacobian_fsolve_plus, tol=1.0e-10)
 
 print('\nDispersion curve')
-kx = np.linspace(k, 0.4, num=250)
+kx = np.linspace(k, 0.2, num=250)
 sols = np.zeros((kx.shape[0], gammas.shape[0])) + 0j
 guess_r, guess_i = solution.x
 for idg, g in enumerate(gammas):
@@ -195,7 +196,7 @@ plt.contour(KX, GG, OM_I, [1.0e-6], colors='r'), plt.tight_layout()
 
 # plt.show()
 
-g_view = 2
+g_view = 6
 
 plt.figure(figsize=(5, 5))
 plt.plot(kx, np.real(sols[:, g_view]), 'r', label=r'Re($\zeta$)', linewidth=3)
@@ -206,8 +207,8 @@ plt.xlabel(r'Wavenumber $k\lambda_D$'), plt.ylabel(r'Phase velocity $\zeta/v_t$'
 plt.grid(True), plt.tight_layout()
 
 plt.figure(figsize=(5, 5))
-plt.plot(kx, np.real(kx * sols[:, g_view]), 'r', label=r'Re($\zeta$)', linewidth=3)
-plt.plot(kx, np.imag(kx * sols[:, g_view]), 'g', label=r'Im($\zeta$)', linewidth=3)
+plt.plot(kx, np.real(kx * sols[:, g_view]), 'r', label=r'Re($\omega$)', linewidth=3)
+plt.plot(kx, np.imag(kx * sols[:, g_view]), 'g', label=r'Im($\omega$)', linewidth=3)
 plt.plot([1/om_pc, 1/om_pc], [-0.1, 0.1], 'k--', label=r'$kr_L=1$', linewidth=3)
 plt.legend(loc='best')
 plt.xlabel(r'Wavenumber $k\lambda_D$'), plt.ylabel(r'Frequency $\omega/\omega_p$')

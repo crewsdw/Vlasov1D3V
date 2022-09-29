@@ -70,7 +70,7 @@ class Distribution:
                                          self.resolutions[1] * self.order, self.resolutions[2] * self.order,
                                          self.resolutions[3] * self.order)
 
-    def initialize(self, grid, vt, alpha, ring_gamma, wavenumber, eigenvalue, E_y, E_z):
+    def initialize(self, grid, vt, alpha, ring_gamma, wavenumber, eigenvalue, dynamic_fields):
         ix, iu, iv = cp.ones_like(grid.x.device_arr), cp.ones_like(grid.u.device_arr), cp.ones_like(grid.v.device_arr)
 
         ring_distribution = cp.tensordot(ix, grid.ring_distribution(thermal_velocity=vt,
@@ -79,7 +79,7 @@ class Distribution:
                                          axes=0)
 
         perturbation = grid.eigenfunction(thermal_velocity=vt, alpha=alpha, ring_parameter=ring_gamma,
-                                          eigenvalue=eigenvalue, wavenumber=wavenumber, E_y=E_y, E_z=E_z)
+                                          eigenvalue=eigenvalue, wavenumber=wavenumber, dynamic_fields=dynamic_fields)
 
         self.arr_nodal = cp.asarray(ring_distribution + perturbation)
         self.fourier_transform()

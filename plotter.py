@@ -11,7 +11,7 @@ class Plotter:
         # Build structured grid, nodal
         self.U, self.V = np.meshgrid(grid.u.arr.flatten(), grid.v.arr.flatten(), indexing='ij')
         self.x = grid.x.arr
-        self.k = grid.x.wavenumbers / grid.x.fundamental
+        self.k = grid.x.wavenumbers   # / grid.x.fundamental
         self.length = grid.x.length
 
         self.resolutions = None
@@ -60,7 +60,7 @@ class Plotter:
             plt.semilogy(self.k.flatten(), np.absolute(spectrum), 'ro', label='absolute value')
             # plt.plot(self.k.flatten(), np.real(spectrum), 'ro', label='real')
             # plt.plot(self.k.flatten(), np.imag(spectrum), 'go', label='imaginary')
-            plt.xlabel('Modes'), plt.ylabel(y_axis + ' spectrum')
+            plt.xlabel(r'Wavenumber $k\lambda_D$'), plt.ylabel(y_axis + ' spectrum')
             plt.grid(True), plt.legend(loc='best'), plt.tight_layout()
 
     def time_series_plot(self, time_in, series_in, y_axis, log=False, give_rate=False):

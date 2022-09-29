@@ -19,7 +19,7 @@ eigenvalue = 0.4096275588561705 + 0.4652331645969896j
 # eigenvalue = 1.5867126026383591 + 0.47966536397472853j
 
 # elements and order
-elements, order = [10, 20, 20, 20], 10
+elements, order = [12, 20, 20, 20], 10
 
 # Geometry
 grid_fundamental = 0.1  # 0.1  # / om_pc
@@ -46,7 +46,7 @@ jz_target = j_e_factor * dynamic_fields.electric_z.arr_spectral[1]
 # build distribution
 distribution = var.Distribution(resolutions=elements, order=order)
 distribution.initialize(grid=grid, vt=1, alpha=1, ring_gamma=6, wavenumber=grid_fundamental, eigenvalue=eigenvalue,
-                        E_y=dynamic_fields.electric_y.arr_spectral[1], E_z=dynamic_fields.electric_z.arr_spectral[1])
+                        dynamic_fields=dynamic_fields)
 distribution.compute_zero_moment(grid=grid)
 distribution.compute_moment_1(grid=grid)
 # print('\nActual currents')
@@ -85,9 +85,9 @@ space_flux = fx.SpaceFlux(resolution=elements[0], c=1/vt_c)
 # Set up time-stepper
 print('Lorentz force dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*highs[1]/om_pc)))
 print('Spatial flux dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*np.sqrt(2)*highs[1]*grid.x.wavenumbers[-1])))
-dt = 5.0e-5  # 1.025e-02 * 1.0
-step = 5.0e-5  # 1.025e-02 * 1.0
-final_time = 5.0e-3
+dt = 3.0e-3  # 1.025e-02 * 1.0
+step = 3.0e-3  # 1.025e-02 * 1.0
+final_time = 6.0e-2
 
 steps = int(np.abs(final_time // dt))
 
