@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import scipy.optimize as opt
 import plasma_dispersion as pd
 
-k = 0.01
-vt_c = 0.1
+k = 0.41
+vt_c = 0.3
 sq2 = 2 ** 0.5
 gamma = 6
-alpha = 1
-vt = 1
+alpha = 2
+vt = 0.5
 om_pc = 10.0
 
 
@@ -110,8 +110,8 @@ def eigenvalue_matrix(z, k):
 
 
 # Phase velocities
-zr = np.linspace(-5, 5, num=200)
-zi = np.linspace(-2, 2, num=200)
+zr = np.linspace(-17, 17, num=200)
+zi = np.linspace(-2, 10, num=200)
 z = np.tensordot(zr, np.ones_like(zi), axes=0) + 1.0j * np.tensordot(np.ones_like(zr), zi, axes=0)
 
 ZR, ZI = np.meshgrid(zr, zi, indexing='ij')
@@ -125,12 +125,13 @@ mu_p = dispersion_function_plus(k, z, gamma)
 # mu_m = dispersion_function_minus(k, z)
 
 solution = opt.root(dispersion_fsolve_plus, x0=np.array([1.586, 0.479]),
-                    args=(0.1, gamma), jac=jacobian_fsolve_plus, tol=1.0e-10)
+                    args=(k, gamma), jac=jacobian_fsolve_plus, tol=1.0e-10)
 # print(solution.x)
 z_sol = solution.x[0] + 1j * solution.x[1]
 print('\n Solution at target wavenumber: ')
 print(z_sol)
 om = z_sol * k
+print(om)
 
 # print((z_sol * vt_c) ** 2)
 # eigenvalue = (z_sol / vt_c) ** 2
@@ -138,8 +139,8 @@ om = z_sol * k
 # eigenvalue_matrix(z=z_sol, k=k)
 
 plt.figure()
-plt.contour(ZR, ZI, np.real(mu_p), 0, colors='r', linewidths=3)
-plt.contour(ZR, ZI, np.imag(mu_p), 0, colors='g', linewidths=3)
+plt.contour(ZR * k, ZI * k, np.real(mu_p), 0, colors='r', linewidths=3)
+plt.contour(ZR * k, ZI * k, np.imag(mu_p), 0, colors='g', linewidths=3)
 plt.xlabel('Real phase velocity'), plt.ylabel('Imaginary phase velocity')
 plt.grid(True), plt.title(r'Dispersion function $\mathcal{D}_+$'), plt.tight_layout()
 plt.show()
@@ -158,7 +159,7 @@ solution = opt.root(dispersion_fsolve_plus, x0=np.array([0, 0.8]),
                     args=(k, gammas[0]), jac=jacobian_fsolve_plus, tol=1.0e-10)
 
 print('\nDispersion curve')
-kx = np.linspace(k, 0.2, num=250)
+kx = np.linspace(k, 1.0, num=250)
 sols = np.zeros((kx.shape[0], gammas.shape[0])) + 0j
 guess_r, guess_i = solution.x
 for idg, g in enumerate(gammas):

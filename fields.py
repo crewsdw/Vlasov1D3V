@@ -41,9 +41,9 @@ class Dynamic:
 
         self.eig_y, self.eig_z = None, None
 
-    def initialize(self, grid, eigenvalue):
+    def initialize(self, grid, eigenvalue, wavenumber):
         # Set eigenmode
-        self.eigenmode(grid=grid, amplitude=1.0e-3, wavenumber=0.1, eigenvalue=eigenvalue)  # ? 1.54j, 0.736j
+        self.eigenmode(grid=grid, amplitude=1.0e-3, wavenumber=wavenumber, eigenvalue=eigenvalue)  # ? 1.54j, 0.736j
 
         # # For now: no initial fields
         # self.electric_y.arr_nodal, self.electric_z.arr_nodal = 0*self.electric_y.arr_nodal, 0*self.electric_z.arr_nodal

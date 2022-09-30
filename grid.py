@@ -219,7 +219,7 @@ class PhaseSpace:
         df_dv_para = np.multiply(f, u / thermal_velocity ** 2)
 
         # set up eigenmode
-        zeta_cyclotron = 1 / self.om_pc / wavenumber
+        zeta_cyclotron = -1 / self.om_pc / wavenumber
         zeta = eigenvalue
         denominator_p = zeta - u - zeta_cyclotron
         denominator_m = zeta - u + zeta_cyclotron
@@ -227,7 +227,7 @@ class PhaseSpace:
         fac2 = np.exp(-1j*phi) / denominator_m
 
         v_cross_grad = r * df_dv_para - u * df_dv_perp
-        A = df_dv_perp - v_cross_grad / zeta
+        A = df_dv_perp + v_cross_grad / zeta
 
         # sq2 = cp.sqrt(2)
         # amplitude = 1.0e-3
@@ -244,7 +244,7 @@ class PhaseSpace:
 
         ''' Kinetic eigenmode given electric field amplitudes '''
         eig = -1j * A * (dynamic_fields.eig_y.get() * (fac1 + fac2) +
-                         1j * dynamic_fields.eig_z.get() * (fac1 - fac2)) / 2.0 / wavenumber
+                         1j * dynamic_fields.eig_z.get() * (fac1 + fac2)) / 2.0 / wavenumber
 
         return cp.asarray(np.real(np.tensordot(np.exp(1j * wavenumber * self.x.arr), eig, axes=0)))
 

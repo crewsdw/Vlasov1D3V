@@ -115,19 +115,19 @@ class Stepper:
                 print('Time since start is ' + str((timer.time() - t0) / 60.0) + ' minutes')
                 # print(self.time_array)
 
-            if np.abs(self.time - self.save_times[save_counter]) < 5.0e-3:
-                distribution.inverse_fourier_transform()
-                data_file.save_data(distribution=distribution.arr_nodal.get(),
-                                    density=distribution.moment0.arr_nodal.get(),
-                                    current_y=distribution.moment_v.arr_nodal.get(),
-                                    current_z=distribution.moment_w.arr_nodal.get(),
-                                    electric_x=static_field.electric_x.arr_nodal.get(),
-                                    electric_y=dynamic_field.electric_y.arr_nodal.get(),
-                                    electric_z=dynamic_field.electric_z.arr_nodal.get(),
-                                    magnetic_y=dynamic_field.magnetic_y.arr_nodal.get(),
-                                    magnetic_z=dynamic_field.magnetic_z.arr_nodal.get(),
-                                    time=self.save_times[save_counter])
-                save_counter += 1
+            # if np.abs(self.time - self.save_times[save_counter]) < 5.0e-3:
+            #     distribution.inverse_fourier_transform()
+            #     data_file.save_data(distribution=distribution.arr_nodal.get(),
+            #                         density=distribution.moment0.arr_nodal.get(),
+            #                         current_y=distribution.moment_v.arr_nodal.get(),
+            #                         current_z=distribution.moment_w.arr_nodal.get(),
+            #                         electric_x=static_field.electric_x.arr_nodal.get(),
+            #                         electric_y=dynamic_field.electric_y.arr_nodal.get(),
+            #                         electric_z=dynamic_field.electric_z.arr_nodal.get(),
+            #                         magnetic_y=dynamic_field.magnetic_y.arr_nodal.get(),
+            #                         magnetic_z=dynamic_field.magnetic_z.arr_nodal.get(),
+            #                         time=self.save_times[save_counter])
+            #     save_counter += 1
 
         print('\nAll done at time is {:0.3e}'.format(self.time))
         print('Total steps were ' + str(self.steps))
