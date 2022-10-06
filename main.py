@@ -19,7 +19,7 @@ charge_sign = -1.0  # electron
 # eigenvalue = 0.4096275588561705 + 0.4652331645969896j
 # eigenvalue = 1.5867126026383591 + 0.47966536397472853j
 # eigenvalue = 0.13525063576435203+2.269550074409259j
-eigenvalue = 0.14473193221558822+1.473344510925545j
+eigenvalue = 0.14473193221558822 + 1.473344510925545j
 
 # elements and order
 elements, order = [10, 12, 28, 28], 10
@@ -90,12 +90,12 @@ print('Lorentz force dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*highs[2]/om_pc)
 print('Spatial flux dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*np.sqrt(2)*highs[1]*grid.x.wavenumbers[-1])))
 dt = 1.0e-3  # 1.025e-02 * 1.0
 step = 1.0e-3  # 1.025e-02 * 1.0
-final_time = 6
+final_time = 1.0e-2  # 6
 
 
 steps = int(np.abs(final_time // dt))
 
-datafile = data.Data(folder='data\\', filename='test_may16')
+datafile = data.Data(folder='data\\', filename='run_to_t' + str(final_time))
 datafile.create_file(distribution=distribution.arr_nodal.get(), density=distribution.moment0.arr_nodal.get(),
                      current_v=distribution.moment_v.arr_nodal.get(), current_w=distribution.moment_w.arr_nodal.get(),
                      electric_x=static_fields.electric_x.arr_nodal.get(),
@@ -107,7 +107,7 @@ datafile.create_file(distribution=distribution.arr_nodal.get(), density=distribu
 stepper = ts.Stepper(dt=dt, resolutions=elements, order=order, steps=steps,  grid=grid,
                      phase_space_flux=phase_space_flux, space_flux=space_flux)
 stepper.main_loop(distribution=distribution, static_field=static_fields, dynamic_field=dynamic_fields,
-                  grid=grid, data_file=data)
+                  grid=grid, data_file=datafile)
 
 # plotter = my_plt.Plotter(grid=grid)
 # plotter.spatial_scalar_plot(scalar=distribution.moment0, y_axis='Zero moment', spectrum=True)
@@ -117,7 +117,7 @@ stepper.main_loop(distribution=distribution, static_field=static_fields, dynamic
 
 # plotter3 = my_plt.Plotter3D(grid=grid)
 # plotter3.distribution_contours3d(distribution=distribution, spectral_idx=0, ctype=ctype)
-# plotter3.distribution_contours3d(distribution=distribution, spectral_idx=1, ctype=ctype)
+# plotter3.distribution_contours3d(distribution=distribution, spectral_idx=1, ctype='real')
 # plotter3.distribution_contours3d(distribution=distribution, spectral_idx=2, ctype=ctype)
 
 plotter.time_series_plot(time_in=stepper.time_array, series_in=stepper.ex_energy,

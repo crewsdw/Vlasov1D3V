@@ -99,16 +99,15 @@ class Stepper:
                 previous_phase_space_fluxes=previous_phase_space_fluxes, previous_dynamic_fluxes=previous_dynamic_fluxes
             )
             self.time += self.dt
-            # print('Step')
 
-            if i % 5 == 0:
+            if i % 10 == 0:
                 self.time_array = np.append(self.time_array, self.time)
                 static_field.gauss(distribution=distribution, grid=grid)
                 self.ex_energy = np.append(self.ex_energy, static_field.compute_field_energy(grid=grid).get())
                 self.ey_energy = np.append(self.ey_energy, dynamic_field.compute_electric_y_energy(grid=grid).get())
                 self.ez_energy = np.append(self.ez_energy, dynamic_field.compute_electric_z_energy(grid=grid).get())
                 self.by_energy = np.append(self.by_energy, dynamic_field.compute_magnetic_y_energy(grid=grid).get())
-                self.bz_energy = np.append(self.bz_energy, dynamic_field.compute_magnetic_z_energy(grid=grid).get())  # another DAMN typo
+                self.bz_energy = np.append(self.bz_energy, dynamic_field.compute_magnetic_z_energy(grid=grid).get())
                 self.thermal_energy = np.append(self.thermal_energy, distribution.total_thermal_energy(grid=grid).get())
                 self.density_array = np.append(self.density_array, distribution.total_density(grid=grid).get())
                 print('\nTook 5 steps, time is {:0.3e}'.format(self.time))
@@ -132,6 +131,19 @@ class Stepper:
         print('\nAll done at time is {:0.3e}'.format(self.time))
         print('Total steps were ' + str(self.steps))
         print('Time since start is {:0.3e}'.format((timer.time() - t0)))
+
+        # Saving final data
+        distribution.inverse_fourier_transform()
+        data_file.save_data(distribution=distribution.arr_nodal.get(),
+                            density=distribution.moment0.arr_nodal.get(),
+                            current_v=distribution.moment_v.arr_nodal.get(),
+                            current_w=distribution.moment_w.arr_nodal.get(),
+                            electric_x=static_field.electric_x.arr_nodal.get(),
+                            electric_y=dynamic_field.electric_y.arr_nodal.get(),
+                            electric_z=dynamic_field.electric_z.arr_nodal.get(),
+                            magnetic_y=dynamic_field.magnetic_y.arr_nodal.get(),
+                            magnetic_z=dynamic_field.magnetic_z.arr_nodal.get(),
+                            time=self.time)
 
     def ssp_rk3(self, distribution, static_field, dynamic_field, grid):
         # Cut-off (avoid CFL advection instability as this is fully explicit)

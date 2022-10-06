@@ -223,8 +223,10 @@ class PhaseSpace:
         zeta = eigenvalue
         denominator_p = zeta - u - zeta_cyclotron
         denominator_m = zeta - u + zeta_cyclotron
-        fac1 = np.exp(1j*phi) / denominator_p
-        fac2 = np.exp(-1j*phi) / denominator_m
+        # fac1 = np.exp(1j*phi) / denominator_p
+        # fac2 = np.exp(-1j*phi) / denominator_m
+        fac1 = np.exp(-1j * phi) / denominator_p
+        fac2 = np.exp(1j * phi) / denominator_m
 
         v_cross_grad = r * df_dv_para - u * df_dv_perp
         A = df_dv_perp + v_cross_grad / zeta
@@ -243,8 +245,12 @@ class PhaseSpace:
         # eig = 1.0e-3 * df_dv_perp * np.exp(1j * phi)
 
         ''' Kinetic eigenmode given electric field amplitudes '''
-        eig = -1j * A * (dynamic_fields.eig_y.get() * (fac1 + fac2) +
-                         1j * dynamic_fields.eig_z.get() * (fac1 + fac2)) / 2.0 / wavenumber
+        # eig = -1j * A * (dynamic_fields.eig_y.get() * (fac1 + fac2) +
+        #                  1j * dynamic_fields.eig_z.get() * (fac1 - fac2)) / 2.0 / wavenumber
+        ex, ey = dynamic_fields.eig_y.get(), dynamic_fields.eig_z.get()
+        eig = -1j * A * ((ex + 1j * ey) * fac1 + (ex - 1j * ey) * fac2) / 2.0 / wavenumber
+        # E_perp = np.real(dynamic_fields.eig_y.get()) + 1j * np.real(dynamic_fields.eig_z.get())
+        # eig = -1j * A * E_perp / 2.0 * (fac1 + fac2) / wavenumber
 
         return cp.asarray(np.real(np.tensordot(np.exp(1j * wavenumber * self.x.arr), eig, axes=0)))
 
