@@ -23,7 +23,11 @@ grid = g.PhaseSpace(lows=lows, highs=highs, elements=elements, order=order, char
 # Read data
 data_file = data.Data(folder='data\\', filename='run_to_t6.0')
 t_data, f_data, n_data, jv_data, jw_data, ex_data, ey_data, ez_data, by_data, bz_data = data_file.read_data()
-print(t_data.shape)
-print(f_data.shape)
 
-# Pull out specific data
+# Look at final distribution
+final_distribution = var.Distribution(resolutions=elements, order=order)
+final_distribution.arr_nodal = cp.asarray(f_data[-1, :, :, :, :, :, :])
+final_distribution.fourier_transform()
+
+plotter3 = my_plt.Plotter3D(grid=grid)
+plotter3.distribution_contours3d(distribution=final_distribution, spectral_idx=0, ctype='real')

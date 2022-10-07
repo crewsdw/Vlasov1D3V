@@ -105,7 +105,7 @@ class Plotter3D:
         iu, iv, iw = (cp.ones(grid.u.elements * grid.u.order),
                       cp.ones(grid.v.elements * grid.v.order),
                       cp.ones(grid.w.elements * grid.w.order))
-        (u3, v3, w3) = (outer3(a=5.0 * grid.u.device_arr.flatten(), b=iv, c=iw),
+        (u3, v3, w3) = (outer3(a=grid.u.device_arr.flatten(), b=iv, c=iw),
                         outer3(a=iu, b=grid.v.device_arr.flatten(), c=iw),
                         outer3(a=iu, b=iv, c=grid.w.device_arr.flatten()))
         self.grid = pv.StructuredGrid(u3, v3, w3)
