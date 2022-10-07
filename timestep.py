@@ -110,7 +110,7 @@ class Stepper:
                 self.bz_energy = np.append(self.bz_energy, dynamic_field.compute_magnetic_z_energy(grid=grid).get())
                 self.thermal_energy = np.append(self.thermal_energy, distribution.total_thermal_energy(grid=grid).get())
                 self.density_array = np.append(self.density_array, distribution.total_density(grid=grid).get())
-                print('\nTook 5 steps, time is {:0.3e}'.format(self.time))
+                print('\nTook 10 steps, time is {:0.3e}'.format(self.time))
                 print('Time since start is ' + str((timer.time() - t0) / 60.0) + ' minutes')
                 # print(self.time_array)
 

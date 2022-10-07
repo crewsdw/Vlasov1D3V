@@ -87,3 +87,18 @@ class Data:
             f['magnetic_y'][-1] = magnetic_y
             f['magnetic_z'][-1] = magnetic_z
             f['time'][-1] = time
+
+    def read_data(self):
+        # open for reading
+        with h5py.File(self.write_filename, 'r') as f:
+            time = f['time'][()]
+            pdf = f['pdf'][()]
+            n = f['density'][()]
+            j_v = f['current_v'][()]
+            j_w = f['current_w'][()]
+            e_x = f['electric_x'][()]
+            e_y = f['electric_y'][()]
+            e_z = f['electric_z'][()]
+            b_y = f['magnetic_y'][()]
+            b_z = f['magnetic_z'][()]
+        return time, pdf, n, j_v, j_w, e_x, e_y, e_z, b_y, b_z
