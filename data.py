@@ -2,6 +2,34 @@ import numpy as np
 import h5py
 
 
+class TimeSeries:
+    def __init__(self, folder, filename):
+        self.write_filename = folder + filename + '.hdf5'
+        self.info_name = folder + filename + '_info.txt'
+
+    def create_file(self, time, e_ex, e_ey, e_ez, e_by, e_bz, e_th, e_tot, n_tot):
+        # Open file for writing
+        with h5py.File(self.write_filename, 'w') as f:
+            f.create_dataset('time', data=np.array([time]),
+                             chunks=True, dtype='f')
+            f.create_dataset('e_ex', data=np.array([e_ex]),
+                             chunks=True, dtype='f')
+            f.create_dataset('e_ey', data=np.array([e_ey]),
+                             chunks=True, dtype='f')
+            f.create_dataset('e_ez', data=np.array([e_ez]),
+                             chunks=True, dtype='f')
+            f.create_dataset('e_by', data=np.array([e_by]),
+                             chunks=True, dtype='f')
+            f.create_dataset('e_bz', data=np.array([e_bz]),
+                             chunks=True, dtype='f')
+            f.create_dataset('e_th', data=np.array([e_th]),
+                             chunks=True, dtype='f')
+            f.create_dataset('e_tot', data=np.array([e_tot]),
+                             chunks=True, dtype='f')
+            f.create_dataset('n_tot', data=np.array([n_tot]),
+                             chunks=True, dtype='f')
+
+
 class Data:
     def __init__(self, folder, filename):
         self.write_filename = folder + filename + '.hdf5'

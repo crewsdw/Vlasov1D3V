@@ -105,12 +105,12 @@ class Plotter3D:
         iu, iv, iw = (cp.ones(grid.u.elements * grid.u.order),
                       cp.ones(grid.v.elements * grid.v.order),
                       cp.ones(grid.w.elements * grid.w.order))
-        (u3, v3, w3) = (outer3(a=grid.u.device_arr.flatten(), b=iv, c=iw),
+        (u3, v3, w3) = (outer3(a=5 * grid.u.device_arr.flatten(), b=iv, c=iw),
                         outer3(a=iu, b=grid.v.device_arr.flatten(), c=iw),
                         outer3(a=iu, b=iv, c=grid.w.device_arr.flatten()))
         self.grid = pv.StructuredGrid(u3, v3, w3)
 
-    def distribution_contours3d(self, distribution, spectral_idx, ctype='real'):
+    def distribution_contours3d(self, distribution, spectral_idx, ctype='real', oscillation=True):
         """
         plot contours of a scalar function f=f(idx, x,y,z) on Plotter3D's grid
         """
@@ -125,7 +125,13 @@ class Plotter3D:
         if ctype == 'absolute':
             new_dist = np.absolute(distribution.arr_spectral[spectral_idx, :, :, :, :, :, :].get())
 
-        contours = np.array([np.amin(new_dist) / 7, np.amax(new_dist) / 7])
+        if oscillation:
+            min_d = np.amin(new_dist)
+            max_d = np.amax(new_dist)
+            contours = np.array([min_d / 10, min_d / 5, min_d / 3, max_d / 3, max_d / 5, max_d / 10])
+        else:
+            max_d = np.amax(new_dist)
+            contours = np.array([0.01 * max_d, 0.1 * max_d, 0.5 * max_d, 0.75 * max_d])
         # contours = np.linspace(np.amin(new_dist), np.amax(new_dist), num=12)
         self.grid['.'] = new_dist.reshape((new_dist.shape[0] * new_dist.shape[1],
                                            new_dist.shape[2] * new_dist.shape[3],

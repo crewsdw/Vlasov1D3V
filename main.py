@@ -8,6 +8,7 @@ import fluxes as fx
 import data
 # import time as timer
 import timestep as ts
+
 # from copy import deepcopy
 
 # Normalization parameters
@@ -83,15 +84,14 @@ phase_space_flux = fx.PhaseSpaceFlux(resolutions=elements, x_modes=grid.x.modes,
                                      order=order, charge_sign=charge_sign,
                                      om_pc=om_pc, nu=0, plotter=plotter)
 phase_space_flux.initialize_zero_pad(grid=grid)
-space_flux = fx.SpaceFlux(resolution=elements[0], c=1/vt_c)
+space_flux = fx.SpaceFlux(resolution=elements[0], c=1 / vt_c)
 
 # Set up time-stepper
-print('Lorentz force dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*highs[2]/om_pc)))
-print('Spatial flux dt estimate:{:0.3e}'.format(1.0/(np.sqrt(3)*np.sqrt(2)*highs[1]*grid.x.wavenumbers[-1])))
-dt = 1.0e-3  # 1.025e-02 * 1.0
-step = 1.0e-3  # 1.025e-02 * 1.0
-final_time = 6.0  # 6
-
+print('Lorentz force dt estimate:{:0.3e}'.format(1.0 / (np.sqrt(3) * highs[2] / om_pc)))
+print('Spatial flux dt estimate:{:0.3e}'.format(1.0 / (np.sqrt(3) * np.sqrt(2) * highs[1] * grid.x.wavenumbers[-1])))
+dt = 2.5e-4  # 1.025e-02 * 1.0
+step = 2.5e-4  # 1.025e-02 * 1.0
+final_time = 7.5  # 6
 
 steps = int(np.abs(final_time // dt))
 
@@ -104,10 +104,21 @@ datafile.create_file(distribution=distribution.arr_nodal.get(), density=distribu
                      magnetic_y=dynamic_fields.magnetic_y.arr_nodal.get(),
                      magnetic_z=dynamic_fields.magnetic_z.arr_nodal.get())
 
-stepper = ts.Stepper(dt=dt, resolutions=elements, order=order, steps=steps,  grid=grid,
+stepper = ts.Stepper(dt=dt, resolutions=elements, order=order, steps=steps, grid=grid,
                      phase_space_flux=phase_space_flux, space_flux=space_flux)
 stepper.main_loop(distribution=distribution, static_field=static_fields, dynamic_field=dynamic_fields,
                   grid=grid, data_file=datafile)
+
+# Save energies
+time_series = data.TimeSeries(folder='data\\', filename='energies_run_to_t' + str(final_time))
+time_series.create_file(time=stepper.time_array, e_ex=stepper.ex_energy,
+                        e_ey=stepper.ey_energy, e_ez=stepper.ez_energy,
+                        e_by=stepper.by_energy, e_bz=stepper.bz_energy,
+                        e_th=stepper.thermal_energy,
+                        e_tot=(stepper.ex_energy + stepper.ey_energy +
+                               stepper.ez_energy + stepper.by_energy +
+                               stepper.bz_energy + stepper.thermal_energy),
+                        n_tot=stepper.density_array)
 
 # plotter = my_plt.Plotter(grid=grid)
 # plotter.spatial_scalar_plot(scalar=distribution.moment0, y_axis='Zero moment', spectrum=True)

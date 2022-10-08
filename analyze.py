@@ -21,13 +21,26 @@ highs = np.array([0.5 * length, 8, 20, 20])
 grid = g.PhaseSpace(lows=lows, highs=highs, elements=elements, order=order, charge_sign=charge_sign, om_pc=om_pc)
 
 # Read data
-data_file = data.Data(folder='data\\', filename='run_to_t6.0')
+data_file = data.Data(folder='data\\', filename='run_to_t8.0')
 t_data, f_data, n_data, jv_data, jw_data, ex_data, ey_data, ez_data, by_data, bz_data = data_file.read_data()
+print(f_data.shape)
 
-# Look at final distribution
+# initial distribution
+initial_distribution = var.Distribution(resolutions=elements, order=order)
+initial_distribution.arr_nodal = cp.asarray(f_data[0, :, :, :, :, :, :])
+initial_distribution.fourier_transform()
+
+# final distribution
 final_distribution = var.Distribution(resolutions=elements, order=order)
 final_distribution.arr_nodal = cp.asarray(f_data[-1, :, :, :, :, :, :])
 final_distribution.fourier_transform()
 
+# difference distribution
+diff_distribution = var.Distribution(resolutions=elements, order=order)
+diff_distribution.arr_nodal = final_distribution.arr_nodal - initial_distribution.arr_nodal
+diff_distribution.fourier_transform()
+
 plotter3 = my_plt.Plotter3D(grid=grid)
-plotter3.distribution_contours3d(distribution=final_distribution, spectral_idx=0, ctype='real')
+plotter3.distribution_contours3d(distribution=initial_distribution, spectral_idx=0, ctype='real', oscillation=False)
+# plotter3.distribution_contours3d(distribution=diff_distribution, spectral_idx=0, ctype='real', oscillation=True)
+# plotter3.distribution_contours3d(distribution=final_distribution, spectral_idx=1, ctype='real', oscillation=True)
