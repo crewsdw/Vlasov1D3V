@@ -65,12 +65,13 @@ static_fields.gauss(distribution=distribution, grid=grid)
 
 plotter = my_plt.Plotter(grid=grid)
 # plotter.spatial_scalar_plot(scalar=distribution.moment0, y_axis='Zero moment', spectrum=True)
-# plotter.spatial_scalar_plot(scalar=distribution.moment_v, y_axis='v moment', spectrum=True)
-# plotter.spatial_scalar_plot(scalar=distribution.moment_w, y_axis='w moment', spectrum=True)
-# plotter.spatial_scalar_plot(scalar=dynamic_fields.electric_y, y_axis='E_y', spectrum=True)
-# plotter.spatial_scalar_plot(scalar=dynamic_fields.electric_z, y_axis='E_z', spectrum=True)
-# plotter.show()
-
+plotter.spatial_scalar_plot(scalar=distribution.moment_v, y_axis='v moment', spectrum=True)
+# plotter.spatial_scalar_plot(scalar=distribution.moment_w, y_axis='w moment', spectrum=False)
+# plotter.spatial_scalar_plot(scalar=dynamic_fields.electric_y, y_axis='E_y', spectrum=False)
+# plotter.spatial_scalar_plot(scalar=dynamic_fields.electric_z, y_axis='E_z', spectrum=False)
+# plotter.spatial_scalar_plot(scalar=dynamic_fields.magnetic_y, y_axis='B_y', spectrum=False)
+plotter.spatial_scalar_plot(scalar=dynamic_fields.magnetic_z, y_axis='B_z', spectrum=True)
+plotter.show()
 # plotter3 = my_plt.Plotter3D(grid=grid)
 # ctype = 'absolute'
 # plotter3.distribution_contours3d(distribution=distribution, spectral_idx=0, ctype=ctype)
@@ -91,11 +92,11 @@ print('Lorentz force dt estimate:{:0.3e}'.format(1.0 / (np.sqrt(3) * highs[2] / 
 print('Spatial flux dt estimate:{:0.3e}'.format(1.0 / (np.sqrt(3) * np.sqrt(2) * highs[1] * grid.x.wavenumbers[-1])))
 dt = 2.5e-4  # 1.025e-02 * 1.0
 step = 2.5e-4  # 1.025e-02 * 1.0
-final_time = 7.5  # 6
+final_time = 0.10  # 7.5  # 6
 
 steps = int(np.abs(final_time // dt))
 
-datafile = data.Data(folder='data\\', filename='run_to_t' + str(final_time))
+datafile = data.Data(folder='data/', filename='run_to_t' + str(final_time))
 datafile.create_file(distribution=distribution.arr_nodal.get(), density=distribution.moment0.arr_nodal.get(),
                      current_v=distribution.moment_v.arr_nodal.get(), current_w=distribution.moment_w.arr_nodal.get(),
                      electric_x=static_fields.electric_x.arr_nodal.get(),
@@ -110,7 +111,7 @@ stepper.main_loop(distribution=distribution, static_field=static_fields, dynamic
                   grid=grid, data_file=datafile)
 
 # Save energies
-time_series = data.TimeSeries(folder='data\\', filename='energies_run_to_t' + str(final_time))
+time_series = data.TimeSeries(folder='data/', filename='energies_run_to_t' + str(final_time))
 time_series.create_file(time=stepper.time_array, e_ex=stepper.ex_energy,
                         e_ey=stepper.ey_energy, e_ez=stepper.ez_energy,
                         e_by=stepper.by_energy, e_bz=stepper.bz_energy,

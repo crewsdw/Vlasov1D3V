@@ -43,7 +43,7 @@ class Dynamic:
 
     def initialize(self, grid, eigenvalue, wavenumber):
         # Set eigenmode
-        self.eigenmode(grid=grid, amplitude=1.0e-3, wavenumber=wavenumber, eigenvalue=eigenvalue)  # ? 1.54j, 0.736j
+        self.eigenmode(grid=grid, amplitude=1.0e-2, wavenumber=wavenumber, eigenvalue=eigenvalue)  # ? 1.54j, 0.736j
 
         # # For now: no initial fields
         # self.electric_y.arr_nodal, self.electric_z.arr_nodal = 0*self.electric_y.arr_nodal, 0*self.electric_z.arr_nodal
@@ -64,14 +64,14 @@ class Dynamic:
         # Nodal values (need to think about this some more)
         # self.magnetic_x = self.om_pc  # cp.real()
         sq2 = cp.sqrt(2)
-        self.eig_y = -1.0j / sq2 * amplitude
-        self.eig_z = 1.0 / sq2 * amplitude
+        self.eig_y = 1.0j / sq2 * amplitude
+        self.eig_z = -1.0 / sq2 * amplitude
         self.electric_y.arr_nodal = cp.real(self.eig_y * cp.exp(1j * wavenumber * grid.x.device_arr))
         self.electric_z.arr_nodal = cp.real(self.eig_z * cp.exp(1j * wavenumber * grid.x.device_arr))
-
+        
         self.magnetic_y.arr_nodal = cp.real(-self.eig_z / eigenvalue * cp.exp(1j * wavenumber * grid.x.device_arr))
         self.magnetic_z.arr_nodal = cp.real(self.eig_y / eigenvalue * cp.exp(1j * wavenumber * grid.x.device_arr))
-
+        
         # wtf was I thinking?
         # self.magnetic_y.arr_nodal = cp.real(-1j * amplitude * cp.exp(1j * wavenumber * grid.x.device_arr) / eigenvalue) / sq2
         # self.magnetic_z.arr_nodal = cp.real(amplitude * cp.exp(1j * wavenumber * grid.x.device_arr) / eigenvalue) / sq2

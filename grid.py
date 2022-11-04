@@ -185,18 +185,24 @@ class PhaseSpace:
         v = outer3(np.ones_like(self.u.arr), self.v.arr, np.ones_like(self.w.arr))
         w = outer3(np.ones_like(self.u.arr), np.ones_like(self.v.arr), self.w.arr)
         r = np.sqrt(v ** 2.0 + w ** 2.0)
-
+        
         # Set distribution
-        x = 0.5 * (r / alpha) ** 2.0
-        factor = 1 / (2.0 * np.pi * (alpha ** 2.0) * sp.gamma(ring_parameter + 1.0))
+        # x = 0.5 * (r / alpha) ** 2.0
+        # factor = 1 / (2.0 * np.pi * (alpha ** 2.0) * sp.gamma(ring_parameter + 1.0))
+        # ring = factor * np.multiply(x ** ring_parameter, np.exp(-x))
+        # maxwell = np.exp(-0.5*u**2/thermal_velocity**2) / np.sqrt(2 * np.pi * thermal_velocity**2)
+
+        # Ring distribution
+        x = (r / alpha) ** 2.0
+        factor = 1 / (np.pi * (alpha ** 2.0) * sp.gamma(ring_parameter + 1.0))
         ring = factor * np.multiply(x ** ring_parameter, np.exp(-x))
         maxwell = np.exp(-0.5*u**2/thermal_velocity**2) / np.sqrt(2 * np.pi * thermal_velocity**2)
-
+        
         return cp.asarray(maxwell * ring)
 
     def eigenfunction(self, thermal_velocity, alpha, ring_parameter, eigenvalue, wavenumber, dynamic_fields):
         ''' Now stupid-proof '''
-        # Cylindrical coordinates grid set-up, using wave-number wavenumber
+        # Cylindrical coordinates grid set-up
         u = outer3(self.u.arr, np.ones_like(self.v.arr), np.ones_like(self.w.arr))
         v = outer3(np.ones_like(self.u.arr), self.v.arr, np.ones_like(self.w.arr))
         w = outer3(np.ones_like(self.u.arr), np.ones_like(self.v.arr), self.w.arr)
@@ -204,7 +210,7 @@ class PhaseSpace:
         phi = np.arctan2(w, v)
         # beta = - self.x.fundamental * r * self.om_pc
         # vt = alpha
-
+        
         # radial gradient of distribution
         # x = 0.5 * (r / vt) ** 2.0
         # ring = 1 / (2.0 * np.pi * (vt ** 2.0) * sp.gamma(ring_parameter + 1.0)) * np.multiply(x ** ring_parameter,
@@ -248,7 +254,7 @@ class PhaseSpace:
         # eig = -1j * A * (dynamic_fields.eig_y.get() * (fac1 + fac2) +
         #                  1j * dynamic_fields.eig_z.get() * (fac1 - fac2)) / 2.0 / wavenumber
         ex, ey = dynamic_fields.eig_y.get(), dynamic_fields.eig_z.get()
-        eig = -1j * A * ((ex + 1j * ey) * fac1 + (ex - 1j * ey) * fac2) / 2.0 / wavenumber
+        eig = -1j * A * ((ex + 1j * ey) * fac1 + (ex - 1j * ey) * fac2) / wavenumber / 2
         # E_perp = np.real(dynamic_fields.eig_y.get()) + 1j * np.real(dynamic_fields.eig_z.get())
         # eig = -1j * A * E_perp / 2.0 * (fac1 + fac2) / wavenumber
 
